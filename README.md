@@ -83,4 +83,4 @@ The issue list of this repo is **exclusively** for bug reports and feature reque
 
 ---
 
-<center>Copyright (c) 2019 jShow.org</center>
+**Copyright (c) 2019 jShow.org**

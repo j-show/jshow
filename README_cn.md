@@ -24,7 +24,7 @@
 [jshow-dm]: https://img.shields.io/npm/dm/jshow.svg
 [jshow-ct]: https://img.shields.io/badge/chat-on%20discord-7289da.svg
 
---
+---
 
 # 支持jShow
 
@@ -37,7 +37,7 @@ jShow是一个MIT许可的开源项目, 其持续的开发完全是在这些令�
 
 通过Patreon捐赠的资金直接用于支持 [jShow][jshow-url] 项目，并让核心团队成员通过全职的方式推动项目。通过OpenCollective捐赠的资金会以全透明方式进行项目管理, 并将用于补偿核心团队成员的工作和费用或赞助社区活动。您的名称/徽标将通过在任何一个平台上捐款获得适当的认可和曝光。
 
---
+---
 
 # 介绍
 
@@ -52,7 +52,7 @@ jShow是一个**开放式工具框架**。他被设计成同时支持`WebBrowser
 	- `手势识别` 针对Mobile端，通过设定将简单手势的串联识别，识别复杂手势
 	- `后端服务` 提供TCP/HTTP2后端服务，全面兼容 [Koa@2](https://koajs.com/) 插件，集成多语言解决方案
 
---
+---
 
 
 # 生态圈
@@ -61,25 +61,25 @@ jShow是一个**开放式工具框架**。他被设计成同时支持`WebBrowser
 |---|---|---|
 | [jShow][jshow-url] | [![jshow-ver]][jshow-npm] | jShow 生态圈 核心内容 |
 
---
+---
 
 # 文档
 
 我们提供[在线样例](https://jshow.org/example)，还可以通过阅读[Wiki](https://jshow.org/wiki)来了解相关说明.
 
---
+---
 
 # 问题
 
 如需问题和支持, 请使用 [官方论坛](https://jshow.org/forum) 或 [社区聊天](https://jshow.org/chat).
 这个仓库的[Issue](https://github.com/j-show/jshow/issue)，**只用于错误报告和功能请求**
 
---
+---
 
 # License
 
 [MIT](http://opensource.org/licenses/MIT)
 
---
+---
 
-<center>Copyright (c) 2019 jShow.org</center>
+**Copyright (c) 2019 jShow.org**
