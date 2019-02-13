@@ -4,16 +4,13 @@
 	</a>
 </p>
 
-<center>
 [![jshow-ci]][jshow-circleci]
 [![jshow-co]][jshow-codecov]
 [![jshow-dm]][jshow-npm]
 [![jshow-ver]][jshow-npm]
-</center>
-<center>
+
 [![jshow-lic]][jshow-npm]
 [![jshow-ct]][jshow-chat]
-</center>
 
 [jshow-url]: https://github.com/j-show/jshow
 [jshow-npm]: https://npmjs.com/package/jshow
@@ -27,7 +24,7 @@
 [jshow-dm]: https://img.shields.io/npm/dm/jshow.svg
 [jshow-ct]: https://img.shields.io/badge/chat-on%20discord-7289da.svg
 
---
+---
 
 # Supporting
 
@@ -40,7 +37,7 @@ jShow is an MIT-Licensed open source project with its ongoing development made p
 
 Funds donated via Patreon go directly to support [jShow][jshow-url] You's full-time work on jShow. Funds donated via OpenCollective are managed with transparent expenses and will be used for compensating work and expenses for core team members or sponsoring community events. Your name/logo will receive proper recognition and exposure by donating on either platform.
 
---
+---
 
 # Introduction
 
@@ -55,7 +52,7 @@ jShow is an **open tool framework**. It's designed to support both `WebBrowser`,
 	- `gesture recognition` For Mobile terminal, simple gestures can be identified in series by setting to recognize complex gestures
 	- `tcp/http2 service` Provide TCP/HTTP2 backend services, fully compatible with [Koa@2](https://koajs.com/) middleware, integrated multilingual solutions.
 
---
+---
 
 
 # Ecosystem
@@ -63,33 +60,27 @@ jShow is an **open tool framework**. It's designed to support both `WebBrowser`,
 | Project | Status | Description |
 |---|---|---|
 | [jShow][jshow-url] | [![jshow-ver]][jshow-npm] | jShow ecosystem core |
-| [jShow-router][jsvr-url] | [![jsvr-ver]][jsvr-npm] | TCP/HTTP2 Server Framework |
 
-
-[jsvr-ver]: https://img.shields.io/npm/v/jsvr.svg
-[jsvr-url]: https://github.com/j-show/jsvr
-[jsvr-npm]: https://npmjs.com/package/jsvr
-
---
+---
 
 # Documentation
 
 
 To check out [live examples](https://jshow.org/example) and [wiki docs](https://jshow.org/wiki), visit [jshow.org](https://jshow.org).
 
---
+---
 
 # Questions
 
 For questions and support please use [the official forum](https://jshow.org/forum) or [community chat](https://jshow.org/chat). 
 The issue list of this repo is **exclusively** for bug reports and feature requests.
 
---
+---
 
 # License
 
 [MIT](http://opensource.org/licenses/MIT)
 
---
+---
 
 <center>Copyright (c) 2019 jShow.org</center>

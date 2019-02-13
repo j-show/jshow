@@ -4,16 +4,13 @@
 	</a>
 </p>
 
-<center>
 [![jshow-ci]][jshow-circleci]
 [![jshow-co]][jshow-codecov]
 [![jshow-dm]][jshow-npm]
 [![jshow-ver]][jshow-npm]
-</center>
-<center>
+
 [![jshow-lic]][jshow-npm]
 [![jshow-ct]][jshow-chat]
-</center>
 
 [jshow-url]: https://github.com/j-show/jshow
 [jshow-npm]: https://npmjs.com/package/jshow
@@ -63,11 +60,6 @@ jShow是一个**开放式工具框架**。他被设计成同时支持`WebBrowser
 | 项目 | 状态&版本 | 说明 |
 |---|---|---|
 | [jShow][jshow-url] | [![jshow-ver]][jshow-npm] | jShow 生态圈 核心内容 |
-
-
-[jsvr-ver]: https://img.shields.io/npm/v/jsvr.svg
-[jsvr-url]: https://github.com/j-show/jsvr
-[jsvr-npm]: https://npmjs.com/package/jsvr
 
 --
 
