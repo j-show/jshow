@@ -1,6 +1,6 @@
 <p align="center">
 	<a href="https://jshow.org" target="_blank">
-		<img width="100" src="https://jshow.org/images/logo.png" alt="jShow logo" />
+		<img width="100" src="https://j-show.github.io/jShow/images/jshow.png" alt="jShow logo" />
 	</a>
 </p>
 
@@ -28,7 +28,7 @@
 
 # Supporting
 
-jShow is an MIT-Licensed open source project with its ongoing development made possible entirely by the support of these awesome [backers](https://github.com/j-show/show/blob/dev/BACKERS.md). If you'd like to join them, please consider:
+jShow is an MIT-Licensed open source project with its ongoing development made possible entirely by the support of these awesome [backers](https://github.com/j-show/jShow/blob/master/BACKERS.md). If you'd like to join them, please consider:
 
 - [Become a backer or sponsor on Patreon](https://www.patreon.com/jshow).
 - [Become a backer or sponsor on Open Collective](https://opencollective.com/jshow).
@@ -66,14 +66,14 @@ jShow is an **open tool framework**. It's designed to support both `WebBrowser`,
 # Documentation
 
 
-To check out [live examples](https://jshow.org/example) and [wiki docs](https://jshow.org/wiki), visit [jshow.org](https://jshow.org).
+To check out [live examples](https://jshow.org/example) and [wiki docs](https://github.com/j-show/jShow/wiki), visit [jshow.org](https://jshow.org).
 
 ---
 
 # Questions
 
 For questions and support please use [the official forum](https://jshow.org/forum) or [community chat](https://jshow.org/chat). 
-The issue list of this repo is **exclusively** for bug reports and feature requests.
+The [issue](https://github.com/j-show/jShow/issues) list of this repo is **exclusively** for bug reports and feature requests.
 
 ---
 

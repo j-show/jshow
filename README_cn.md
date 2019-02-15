@@ -1,6 +1,6 @@
 <p align="center">
 	<a href="https://jshow.org" target="_blank">
-		<img width="100" src="https://jshow.org/images/logo.png" alt="jShow logo" />
+		<img width="100" src="https://j-show.github.io/jShow/images/logo.png" alt="jShow logo" />
 	</a>
 </p>
 
@@ -28,7 +28,7 @@
 
 # 支持jShow
 
-jShow是一个MIT许可的开源项目, 其持续的开发完全是在这些令人感激的[支持者](https://github.com/j-show/show/blob/dev/BACKERS.md)的支持下实现的。如果您想加入他们, 请考虑:
+jShow是一个MIT许可的开源项目, 其持续的开发完全是在这些令人感激的[支持者](https://github.com/j-show/jShow/blob/master/BACKERS.md)的支持下实现的。如果您想加入他们, 请考虑:
 
 - [通过Patreon，成为支持者或赞助商](https://www.patreon.com/jshow).
 - [通过OpenCollective，成为支持者或赞助商](https://opencollective.com/jshow).
@@ -65,14 +65,14 @@ jShow是一个**开放式工具框架**。他被设计成同时支持`WebBrowser
 
 # 文档
 
-我们提供[在线样例](https://jshow.org/example)，还可以通过阅读[Wiki](https://jshow.org/wiki)来了解相关说明.
+我们提供[在线样例](https://jshow.org/example)，还可以通过阅读[Wiki](https://github.com/j-show/jShow/wiki/中文Wiki)来了解相关说明.
 
 ---
 
 # 问题
 
 如需问题和支持, 请使用 [官方论坛](https://jshow.org/forum) 或 [社区聊天](https://jshow.org/chat).
-这个仓库的[Issue](https://github.com/j-show/jshow/issue)，**只用于错误报告和功能请求**
+这个仓库的[Issue](https://github.com/j-show/jShow/issues)，**只用于错误报告和功能请求**
 
 ---
 
