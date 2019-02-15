@@ -1,6 +1,6 @@
 <p align="center">
 	<a href="https://jshow.org" target="_blank">
-		<img width="100" src="https://j-show.github.io/jShow/images/jshow.png" alt="jShow logo" />
+		<img width="100" src="https://jshow.org/images/jshow.png" alt="jShow logo" />
 	</a>
 </p>
 
