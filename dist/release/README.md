@@ -58,8 +58,6 @@ jShow is an **open tool framework**. It's designed to support both `WebBrowser`,
 
 - **`Tools Library`**
 	- [`core`](https://github.com/j-show/jShow/wiki/core_function) Basic function library for a variety of simple, complex types of judgment
-	- [`Check`](https://github.com/j-show/jShow/wiki/lib_check) Extend the basic class structure and improve the operation mode of events, exceptions, etc.
-	- [`async extensions`](https://github.com/j-show/jShow/wiki/async_extensions) Extend asynchronous functions to define generic asynchronous code encoding specifications
 	- [`Check`](https://github.com/j-show/jShow/wiki/lib_check) —— Check everything function library.
 	- [`Conver`](https://github.com/j-show/jShow/wiki/lib_conver) —— Data Conver function library.
 	- [`Dete`](https://github.com/j-show/jShow/wiki/lib_date) —— Date & Time calculations functions.
