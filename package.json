@@ -1,0 +1,31 @@
+{
+	"name": "jshow",
+	"description": "jshow Open Tools Framework",
+	"keywords": [
+		"jshow",
+		"jShow"
+	],
+	"license": "MIT",
+	"homepage": "https://github.com/j-show/jshow",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/j-show/jShow.git"
+	},
+	"bugs": {
+		"url": "https://github.com/j-show/jShow/issues"
+	},
+	"dependencies": {},
+	"devDependencies": {
+		"del": "^4.0.0",
+		"gulp": "^4.0.0",
+		"gulp-replace": "^1.0.0"
+	},
+	"scripts": {
+		"build": "gulp build",
+		"test": "gulp test && mocha test/"
+	},
+	"version": "1.0.1",
+	"logs": {
+		"1.0.1": "项目构建"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"core":    [
+		"core.js",
+		"class.js",
+		"async.js",
+		"%cmd.js"
+	],
+	"loading": [
+		"loading.js",
+		"%loading.js"
+	]
+}
