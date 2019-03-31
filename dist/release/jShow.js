@@ -3,7 +3,7 @@
 	if (global.jShow) return;
 
 	factory.call(
-		{ver: "1.0.1"},
+		{ver: "1.0.2"},
 		global,
 		{
 			Node:       0,
@@ -3227,52 +3227,6 @@
 	$.__require("./lib/date", "Date");
 	$.__require("./lib/check", "Check");
 	// $.__require("./lib/task", "Task");
-})(this);
-/**
- * ==========================================
- * Name:           jShow's Loading
- * Author:         j-show
- * CreTime:        2019-03-14
- * Description:    Web Tools Loading
- * Log:
- * 2019-03-14    Init Class
- * ==========================================
- */
-($ => {
-	if ($.mode & $.MODE.Web) {
-		// $.__require("./lib/web/dom", "DOM");
-		$.__require("./lib/web/request", "Request");
-		$.__require("./lib/web/cookie", "Cookie");
-		$.__require("./lib/web/storage", "Storage");
-		$.__require("./lib/web/history", "History");
-	}
-
-	if ($.mode & $.MODE.WebDesktop) {
-
-	}
-
-	if ($.mode & $.MODE.WebMobile) {
-
-	}
-})(this);
-/**
- * ==========================================
- * Name:           jShow's Loading
- * Author:         j-show
- * CreTime:        2019-03-14
- * Description:    Node.js Tools Loading
- * Log:
- * 2019-03-14    Init Class
- * ==========================================
- */
-($ => {
-	if ($.mode != $.MODE.Node) return;
-
-	$.__require("./lib/node/net", "Net");
-	// $.__require("./lib/node/db", "DB");
-	$.__require("./lib/node/log", "Log");
-	$.__require("./lib/node/fs", "FS");
-	// $.__require("./lib/node/zip", "Zip");
 })(this);
 
 });

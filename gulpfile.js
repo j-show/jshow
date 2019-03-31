@@ -99,7 +99,9 @@ function build () {
 	initCore_Release(src, dest, cfg, pkg.version);
 	initPackage(pkg, dest);
 
-	return gulp.src(`${src}/lib/*.js`).pipe(gulp.dest(`${dest}/lib`));
+	gulp.src(`${src}/lib/*.js`).pipe(gulp.dest(`${dest}/lib`));
+
+	return gulp.src(`${src}/README.md`).pipe(gulp.dest(dest));
 }
 
 function test () {
