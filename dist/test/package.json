@@ -1,0 +1,22 @@
+{
+    "name": "jshow",
+    "description": "jshow Open Tools Framework",
+    "keywords": [
+        "jshow",
+        "jShow"
+    ],
+    "license": "MIT",
+    "homepage": "https://github.com/j-show/jshow",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/j-show/jShow.git"
+    },
+    "bugs": {
+        "url": "https://github.com/j-show/jShow/issues"
+    },
+    "version": "1.0.1",
+    "logs": {
+        "1.0.1": "项目构建"
+    },
+    "main": "jShow.js"
+}
