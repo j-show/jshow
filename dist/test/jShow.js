@@ -3,7 +3,7 @@
 	if (global.jShow) return;
 
 	factory.call(
-		{ver: "1.0.1"},
+		{ver: "1.0.2"},
 		global,
 		{
 			Node:       0,
