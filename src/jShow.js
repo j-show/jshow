@@ -2,91 +2,118 @@
 (function (global, factory) {
 	if (global.jShow) return;
 
-	factory.call(
-		{ver: "@version"},
-		global,
-		{
-			Node:       0,
-			Web:        0xff,
-			WebDesktop: 0x0f,
-			WebMac:     0x08,
-			WebMobile:  0xf0,
-			WebiPhone:  0x10,
-			WebiPad:    0x20,
-			WebAndroid: 0xc0,
-			WebAPhone:  0x40,
-			WebAPad:    0x80
-		});
+	const MODE = {
+		Node:       0,
+		Web:        0xff,
+		WebDesktop: 0x0f,
+		WebMac:     0x08,
+		WebMobile:  0xf0,
+		WebiPhone:  0x10,
+		WebiPad:    0x20,
+		WebAndroid: 0xc0,
+		WebAPhone:  0x40,
+		WebAPad:    0x80
+	};
+
+	const jShow = {
+		ver: "@version",
+		...(factory.call(global, MODE))
+	};
+
+	global.jShow = jShow;
+
+	if (jShow.mode === MODE.Node) module.exports = jShow;
 })(typeof (window) !== "undefined" ? window : global, function (global, MODE) {
-	const $ = this;
+	let jShow = {};
 
 	if (!global.navigator) global.navigator = {userAgent: ""};
 
-	global.jShow = $;
-	$.MODE = MODE;
-	$.mode = MODE.Node;
+	jShow.MODE = MODE;
+	jShow.mode = MODE.Node;
 
 	/**
-	 * 环境判断
+	 * Get Javascript Env Version
 	 *
-	 * @param {string} [na=undefined] 版本字符串
+	 * @param {string} [na=undefined] <version object>
 	 * @returns {object}
-	 *    @return {number} mode 模式，对应MODE码表
-	 *    @return {string} kernel 内核名称
-	 *    @return {string} version 内核版本
+	 *    @return {number} mode <value from MODE object>
+	 *    @return {string} kernel <kernel name>
+	 *    @return {string} version <kernel version>
 	 */
-	$.version = na => {
-		let r = {mode: MODE.Node, kernel: "node", version: ""};
+	jShow.version = function parseKernelVersion (na = navigator.userAgent) {
+		let nav     = na;
+		let mode    = MODE.Node;
+		let kernel  = "node";
+		let version = "";
 
-		if (!na && typeof(window) == "undefined" && process) {
-			r.kernel = "node";
-			r.version = process.versions.node;
+		try {
+			if (!nav && (window === void 0) && process) {
+				version = process.versions.node;
+				return;
+			}
+
+			(nav => {
+				let val = null;
+
+				val = nav.match(/msie ([\d.]+)/);
+				if (val && val.length > 1) {
+					kernel  = "msie";
+					version = val[1];
+					return;
+				}
+
+				val = nav.match(/firefox\/([\d.]+)/);
+				if (val && val.length > 1) {
+					kernel  = "firefox";
+					version = val[1];
+					return;
+				}
+
+				val = nav.match(/chrome\/([\d.]+)/);
+				if (val && val.length > 1) {
+					kernel  = "chrome";
+					version = val[1];
+					return;
+				}
+
+				val = nav.match(/opera.([\d.]+)/);
+				if (val && val.length > 1) {
+					kernel  = "opera";
+					version = val[1];
+					return;
+				}
+
+				val = nav.match(/version\/([\d.]+).*safari/);
+				if (val && val.length > 1) {
+					kernel  = "safari";
+					version = val[1];
+					return;
+				}
+
+				kernel  = "other";
+				version = "0";
+			})(nav.toLowerCase());
+
+			mode = (nav => {
+				if (nav.indexOf("Android") > -1 || nav.indexOf("Linux") > -1) return MODE.WebAndroid;
+
+				if (nav.indexOf("iPhone") > -1) return MODE.WebiPhone;
+
+				if (nav.indexOf("iPad") > -1) return MODE.WebiPad;
+
+				if (nav.match(/\(i[^;]+;( U;)? CPU.+Mac OS/)) return MODE.WebMac;
+
+				return MODE.WebDesktop;
+			})(nav);
 		}
-		else {
-			na = typeof(na) == "string" && na ? na : navigator.userAgent;
-
-			let s = na.toLowerCase(),
-				t;
-
-			if (t = s.match(/msie ([\d.]+)/)) {
-				r.kernel = "ie";
-				r.version = t[1];
-			}
-			else if (t = s.match(/firefox\/([\d.]+)/)) {
-				r.kernel = "firefox";
-				r.version = t[1];
-			}
-			else if (t = s.match(/chrome\/([\d.]+)/)) {
-				r.kernel = "chrome";
-				r.version = t[1];
-			}
-			else if (t = s.match(/opera.([\d.]+)/)) {
-				r.kernel = "opera";
-				r.version = t[1];
-			}
-			else if (t = s.match(/version\/([\d.]+).*safari/)) {
-				r.kernel = "safari";
-				r.version = t[1];
-
-			}
-			else {
-				r.kernel = "other";
-				r.version = "0";
-			}
-
-			if (na.indexOf("Android") > -1 || na.indexOf("Linux") > -1) r.mode = MODE.WebAndroid;
-			else if (na.indexOf("iPhone") > -1) r.mode = MODE.WebiPhone;
-			else if (na.indexOf("iPad") > -1) r.mode = MODE.WebiPad;
-			else if (na.match(/\(i[^;]+;( U;)? CPU.+Mac OS/)) r.mode = MODE.WebMac;
-			else r.mode = MODE.WebDesktop;
+		finally {
+			return {mode, kernel, version};
 		}
-
-		return r;
 	};
-	$.mode = $.version().mode;
-	if ($.mode == MODE.Node) exports = module.exports = $;
-	else if (!global.global) global.global = global;
+	jShow.mode = jShow.version().mode;
 
-"@Code";
-"@Loading";
+	if (jShow.mode !== MODE.Node && !global.global) global.global = global;
+
+	"@Code";
+	"@Loading";
 });
