@@ -14,9 +14,10 @@
     "bugs": {
         "url": "https://github.com/j-show/jShow/issues"
     },
-    "version": "1.0.2",
+    "version": "1.0.5",
     "logs": {
-        "1.0.1": "项目构建"
+        "1.0.1": "project init",
+        "1.0.5": "Format Code to jShow Style Guide"
     },
     "main": "jShow.js"
 }

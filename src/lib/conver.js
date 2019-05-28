@@ -3,1073 +3,1178 @@
  * Name:           Conver
  * Author:         jShow
  * CreTime:        2014-11-20
- * Description:    转换函数库
+ * Description:    Conver function
  * Log
- * 2015-06-08    优化模块结构
+ * 2015-06-08    Optimize module structure
+ * 2019-05-25    Format Code to jShow Style Guide
  * ==========================================
  */
-jShow.define(function (module, exports, require) {
+define("Conver", ["String", "RegExp"], function (require, module, STRING, REGEXP) {
 	"use strict";
-	let api;
+
+	const $ = jShow;
 
 	/**
-	 * 泛式转换
-	 *
 	 * @namespace Conver
 	 */
-	api = {
+	const api = {
 		/**
-		 * 转换Boolean
+		 * Any to boolean
 		 *
-		 * @param {*} value
+		 * @param {*} value <target>
 		 * @returns {boolean}
 		 */
-		toBool:     value => {
-			switch (jShow.type(value, true)) {
+		toBool (value) {
+			switch ($.type(value, true)) {
 				case "boolean":
 					return value;
 				case "number":
-					return value != 0;
+					return value !== 0;
 				case "string":
-					return value.toLowerCase() == "true";
+					return value.toLowerCase() === "true";
 				case "null":
 				case "undefined":
 					return false;
 				case "array":
 					return value.length > 0;
 				case "object":
-					return !jShow.is(value, {}, false);
+					return !$.is(value, {}, false);
 				default:
 					return false;
 			}
 		},
 		/**
-		 * 转换Integer
+		 * Any to Integer
 		 *
-		 * @param {*} value
-		 * @param {number} [def=0]
-		 * @param {function} [callback=null]
+		 * @param {*} value <target>
+		 * @param {number|object} [opt] <option>
+		 *    @param {number} [opt.def=0] <default value>
+		 * @param {function} [callback]
 		 * @returns {number}
 		 */
-		toInteger:  (value, def, callback) => {
-			let result = Number(value);
+		toInteger (value, opt = 0, callback = opt) {
+			let data = Number(value);
+			let {
+					def = 0
+				}    = opt;
 
-			if (callback === void(0)) callback = def;
+			if (typeof(opt) === "number") def = opt;
 
-			def = parseInt(jShow.isNumber(def) ? def : 0);
-			result = parseInt(isNaN(result) ? def : result);
+			if (!$.isNumber(def)) def = 0;
+			if (isNaN(data)) data = def;
 
-			return jShow.isFunction(callback) ? callback(result, value, def) : result;
+			return $.isFunction(callback) ? callback(data, value, def) : data;
 		},
-		toUInteger: (value, def, callback) => {
+		toUInteger (value, opt = 0, callback = opt) {
+			let {
+					def = 0
+				} = opt;
+
+			if (typeof(opt) === "number") def = opt;
+
+			if (!$.isNumber(def, {min: 0})) def = 0;
+
 			return api.toInteger(value, def, (result, value, def) => {
 				if (result < 0) result = def;
 
-				return jShow.isFunction(callback) ? callback(result, value, def) : result;
+				return $.isFunction(callback) ? callback(result, value, def) : result;
 			});
 		},
 		/**
-		 * 转换Float
-		 * 忽略小数部分采取四舍五入
+		 * Any to float number
+		 * ignore the decimals and round them up
 		 *
-		 * @param {*} value
-		 * @param {number} [len=1] 小数位数
-		 * @param {number} [def=0] 默认值
-		 * @param {function} [callback=null]
+		 * @param {*} value <target>
+		 * @param {number|object} [opt] <option>
+		 *    @param {number} [opt.len=2] <decimal number length>
+		 *    @param {number} [opt.def=0] <default value>
+		 * @param {function} [callback]
 		 * @returns {number}
 		 */
-		toFloat:    (value, len, def, callback) => {
-			let result = Number(value);
+		toFloat (value, opt, callback = opt) {
+			let data = Number(value);
 
-			if (callback === void(0)) callback = def;
+			let {
+					def = 0,
+					len = 2
+				} = opt;
 
-			len = parseInt(jShow.isNumber(len) && len > 0 ? len : 1);
-			def = parseFloat(jShow.isNumber(def) ? def : 0);
-			result = isNaN(result) ? def : result;
+			if (typeof(opt) === "number") def = opt;
 
-			result = parseInt(result * Math.pow(10, len) + 0.5 * (result > 0 ? 1 : -1)) / Math.pow(10, len);
+			if (!$.isNumber(def, {int: false})) def = 0;
+			if (!$.isNumber(len, {min: 0})) len = 2;
+			if (isNaN(data)) data = def;
 
-			return jShow.isFunction(callback) ? callback(result, value, def) : result;
+			let temp = 10 ** len;
+			data     = parseInt((data * temp) + (0.5 * (data > 0 ? 1 : -1))) / temp;
+
+			return $.isFunction(callback) ? callback(data, value, def) : data;
 		},
-		toUFloat:   (value, len, def, callback) => {
-			return api.toFloat(value, len, def, (result, value, def) => {
+		toUFloat (value, opt, callback = opt) {
+			let {
+					def = 0,
+					len = 2
+				} = opt;
+
+			if (typeof(opt) === "number") def = opt;
+
+			if (!$.isNumber(def, {int: false, min: 0})) def = 0;
+
+			return api.toFloat(value, {def, len}, (result, value, def) => {
 				if (result < 0) result = def;
 
-				return jShow.isFunction(callback) ? callback(result, value, def) : result;
+				return $.isFunction(callback) ? callback(result, value, def) : result;
 			});
 		},
 		/**
-		 * 转换字符串，只进行基础类型转换
+		 * Any to string
 		 *
-		 * @param {*} value
-		 * @param {object} opt
+		 * @param {*} value <target>
+		 * @param {object} [opt] <option, different types have different parameters>
 		 * @param {function} callback
 		 * @returns {string}
 		 */
-		toString:   function (value, opt, callback) {
-			if (arguments.length < 3) callback = opt;
-			if (!jShow.isFunction(callback)) callback = null;
+		toString (value, opt, callback = opt) {
+			let data = value;
 
-			if (jShow.isObject(opt)) opt = jShow.clone(opt, {}, true);
+			const func = $.isFunction(callback) ? callback : null;
 
-			switch (jShow.type(value, true)) {
+			switch ($.type(data, true)) {
 				default:
 					return "";
 				case "boolean":
-					return callback ? callback(value ? "true" : "false", value) : (value ? "true" : "false");
-				case "number":
+					data = data ? "true" : "false";
+					return func ? func(data, value) : data;
+				case "number": {
 					/**
 					 * @param {number} value
 					 * @param {object} [opt]
-					 *    @param {number} [opt.len=0]
-					 *    @param {number} [opt.def=0]
-					 *    @param {boolean} [opt.chs=false] 是否按大写中文方式转换
-					 *    @param {Array} [opt.bit]
+					 *    @param {number} [opt.len=0] <decimal number length>
+					 *    @param {number} [opt.def=0] <default value>
+					 *    @param {boolean} [opt.chs=false] <is conver chinese number>
+					 *    @param {Array} [opt.bit] <chinese number format code>
 					 * @param {function} [callback=null]
 					 */
-					return (function (value, opt, callback) {
-						let result,
-							len, def, chs, bit;
+					let {
+							len = 0,
+							def = 0,
+							chs = false,
+							bit
+						} = opt;
 
-						switch (jShow.type(opt, true)) {
-							case "object":
-								len = opt.len;
-								def = opt.def;
-								chs = opt.chs;
-								bit = opt.bit;
-								break;
-							case "number":
-								def = opt;
-								break;
-							case "boolean":
-								chs = opt;
-								break;
-							case "array":
-								bit = opt;
-								break;
-						}
-						if (!jShow.isNumber(len) || len < 0) len = 0;
-						if (!jShow.isNumber(def)) def = 0;
+					switch ($.type(opt, true)) {
+						case "number":
+							def = opt;
+							break;
+						case "boolean":
+							chs = opt;
+							break;
+						case "array":
+							bit = opt;
+							break;
+					}
 
-						result = len ? this.toFloat(value, len, def) : this.toInteger(value, def);
-						result = result.toString();
+					if (!$.isNumber(len, {min: 0})) len = 0;
+					if (!$.isNumber(def)) def = 0;
 
-						if (chs === true) {
-							result = ((value, bit) => {
-								let int = [],
-									dec = [],
-									i, j, o, p;
+					data = len === 0 ? api.toInteger(data, def) : api.toFloat(data, {len, def});
+					data = data.toString();
 
-								for (i = value[0].length - 1; i >= 0; i--) int.push(value[0][i]);
-								for (i = 0; i < value[1].length; i++) dec.push(bit[0][parseInt(value[1][i])]);
-								for (i = 0, j = -1, o = "", p = ""; i < int.length; i++) {
-									if (i % 4 == 0) {
-										j++;
-										p = bit[2][j] + p;
-										o = "";
-									}
-
-									if (int[i] != "0") p = bit[0][parseInt(int[i])] + bit[1][i % 4] + p;
-									else {
-										if (i % 4 && int[i - 1] != "0") o = bit[0][0];
-
-										p = o + p;
-										o = "";
-									}
-								}
-
-								if (p.indexOf(bit[0][0]) == 0) p = p.substr(1);
-
-								int = p.split("");
-
-								for (i = 0, o = false; i < int.length;) {
-									if (o) {
-										if (int[i] == bit[1][1]) {
-											int.splice(i - 1, 1);
-											continue;
-										}
-										else o = false;
-									}
-									else if (int[i] == bit[0][1]) o = true;
-
-									i++;
-								}
-								for (i = 0, o = false; i < int.length;) {
-									for (j = 0; j < bit[2].length; j++) {
-										if (int[i] == bit[2][j]) {
-											if (o) int.splice(i, 1);
-											o = true;
-											break;
-										}
-									}
-
-									if (o && j >= bit[2].length) o = false;
-									else i++;
-								}
-
-								int = int.join("");
-								dec = dec.length > 0 ? bit[0][10] + dec.join("") : "";
-
-								return int + dec;
-							})(result.split(".").concat(""), jShow.isArray(bit) ? bit : [
+					if (chs === true) {
+						data = data.split(".").concat("");
+						if (!$.isArray(bit, {min: 3})) {
+							bit = [
 								["零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "点"],
 								["", "十", "百", "千"],
 								["", "万", "亿", "兆"]
-							]);
+							];
 						}
 
-						return callback ? callback(result, value) : result;
-					}).apply(api, [value, opt, callback]);
-				case "string":
+						let int = [...data[0]].reverse();
+						let dec = [...data[1]];
+
+						dec.forEach((d, i) => dec[i] = bit[0][parseInt(d)]);
+
+						int = ((b0, b1, b2) => {
+							let p = "";
+
+							for (let i = 0, j = -1, o = "", d; i < int.length; i++) {
+								d = int[i];
+								if (i % 4 === 0) {
+									j += 1;
+									p = `${b2[j]}${p}`;
+									o = "";
+								}
+
+								if (d !== "0") {
+									p = `${b1[parseInt(d)]}${b1[i % 4]}${p}`;
+								}
+								else {
+									if ((i % 4 !== 0) && (int[i - 1] !== "0")) o = b0[0];
+
+									p = `${o}${p}`;
+									o = "";
+								}
+							}
+
+							if (p.indexOf(b0[0]) === 0) p = p.substr(1);
+
+							int = p.split("");
+
+							for (let i = 0, o = false, d; i < int.length;) {
+								d = int[i];
+								if (o) {
+									if (d === b1[1]) {
+										int.splice(i - 1, 1);
+										continue;
+									}
+									else o = false;
+								}
+								else if (d === b0[1]) o = true;
+
+								i++;
+							}
+
+							for (let i = 0, o = false, j, d; i < int.length;) {
+								d = int[i];
+								for (j = 0; j < b2.length; j++) {
+									if (d === b2[j]) {
+										if (o) int.splice(i, 1);
+										o = true;
+										break;
+									}
+								}
+
+								if (o && j >= b2.length) o = false;
+								else i += 1;
+							}
+
+							return int.join("");
+						})(...bit);
+
+						dec = dec.length > 0 ? `${bit[0][10]}${dec.join("")}` : "";
+
+						data = `${int}${dec}`;
+					}
+
+					return func ? func(data, value) : data;
+				}
+				case "string": {
 					/**
 					 * @param {string} value
 					 * @param {object} [opt]
-					 *    @param {string} [opt.filter=text] 过滤类型
-					 *        @param {string} opt.filter=text 文本过滤
-					 *            @param {boolean} [opt.html] 是否转义html
-					 *        @param {string} opt.filter=html html标签过滤
+					 *    @param {string} [opt.filter=text] <filter type>
+					 *        @param {string} opt.filter=text <filter normal text>
+					 *            @param {boolean} [opt.html] <is conver html tag>
+					 *        @param {string} opt.filter=html <filter html tag>
 					 * @param {function} [callback=null]
 					 */
-					return (function (value, opt, callback) {
-						let result = value,
-							filter;
+					let {
+							filter = "text",
+							html   = false
+						} = opt;
 
-						switch (jShow.type(opt, true)) {
-							default:
-								opt = {};
-								break;
-							case "object":
-								filter = opt.filter;
-								break;
-							case "boolean":
-								opt = {
-									html: opt
-								};
-								filter = "text";
-								break;
-						}
+					switch (typeof(opt)) {
+						case "boolean":
+							html   = opt;
+							filter = "text";
+							break;
+						case "string":
+							filter = opt;
+							break;
+					}
 
-						switch (filter) {
-							default:
-							case "text":
-								if (opt.html === true) result = this.toHtml(result, false, false);
-								break;
-							case "html":
-								result = jShow.RegExp.Html(result, "*");
-								break;
-						}
+					switch (filter) {
+						default:
+						case "text":
+							if (html === true) data = api.toHtml(data, {tab: false, rev: false});
+							break;
+						case "html":
+							data = REGEXP.Html(data, "*");
+							break;
+					}
 
-						return callback ? callback(result, value) : result;
-					}).apply(api, [value, opt, callback]);
+					return func ? func(data, value) : data;
+				}
 				case "undefined":
 				case "null":
-					return jShow.isFunction(callback) ? callback("null", value) : "null";
-				case "date":
+					return func ? func("null", data) : "null";
+				case "date": {
 					/**
 					 * @param {date} value
 					 * @param {object|string} opt
-					 *    @param {string} [opt.fmt=yyyy-m-d hh:nn:ss] 格式化字符串
+					 *    @param {string} [opt.fmt=yyyy-m-d hh:nn:ss] <format code>
 					 * @param {function} [callback]
 					 */
-					return (function (value, opt, callback) {
-						let result = "yyyy-m-d hh:nn:ss",
-							fmt;
+					let {
+							fmt = "yyyy-mm-dd hh:nn:ss",
+							bit = []
+						} = opt;
 
-						switch (typeof(opt)) {
-							case "object":
-								fmt = opt.fmt;
-								break;
-							case "string":
-								fmt = opt;
-								break;
-						}
-						if (jShow.isString(fmt)) result = fmt;
+					switch ($.type(opt, true)) {
+						case "string":
+							fmt = opt;
+							break;
+						case "array":
+							bit = opt;
+							break;
+					}
 
-						if (result.toLowerCase() === "iso") result = "yyyy-mm-ddThh:nn:ssZ";
-						else if (jShow.TChinaDate && /((CY|CM|Y|M|D|T|Z)+)/.test(result)) result = (new jShow.TChinaDate(value)).toString(result);
+					if (!$.isArray(bit)) bit = ["日", "一", "二", "三", "四", "五", "六"];
+					if (!$.isString(fmt)) fmt = "yyyy-mm-dd hh:nn:ss";
+					if (fmt === "iso") fmt = "yyyy-mm-ddThh:nn:ssZ";
 
-						if (/((y|m|d|w|W|h|H|n|N|s|S|q|Q|z|f)+)/.test(result)) {
-							jShow.each(
-								{
-									"y+":    value.getFullYear(), //年份
-									"m+":    value.getMonth() + 1,//月份
-									"d+":    value.getDate(),//日
-									"w+":    value.getDay(),//周
-									"W+":    (["日", "一", "二", "三", "四", "五", "六"])[value.getDay()],//中文周
-									"[hH]+": value.getHours(),//小时
-									"[nN]+": value.getMinutes(),//分
-									"[sS]+": value.getSeconds(),//秒
-									"[qQ]+": Math.floor((value.getMonth() + 3) / 3),//季度
-									"[zf]+": value.getMilliseconds()//毫秒
-								},
-								(d, k, str, rxp) => {
-									str = "";
-									rxp = new RegExp("(" + k + ")", "g");
+					if ($.TChinaDate && /((CY|CM|CD|CT|CZ|Y|M|D)+)/.test(fmt)) fmt = $.TChinaDate.toString(fmt, data);
 
-									if (!rxp.test(result)) return;
+					if (/((y|m|d|w|W|h|H|n|N|s|S|q|Q|z|f)+)/.test(fmt)) {
+						$.each(
+							{
+								"y+":    data.getFullYear(), //年份
+								"m+":    data.getMonth() + 1,//月份
+								"d+":    data.getDate(),//日
+								"w+":    data.getDay(),//周
+								"W+":    bit[data.getDay()],//中文周
+								"[hH]+": data.getHours(),//小时
+								"[nN]+": data.getMinutes(),//分
+								"[sS]+": data.getSeconds(),//秒
+								"[qQ]+": Math.floor((data.getMonth() + 3) / 3),//季度
+								"[zf]+": data.getMilliseconds()//毫秒
+							},
+							(d, k) => {
+								let str = "";
+								let rxp = new RegExp(`(${k})`, "g");
 
-									switch (k) {
-										case "y+":
-											str = RegExp.$1.length >= 4 || RegExp.$1.length < 2 ? d : (d + "").substr(-2);
-											break;
-										case "w+":
-										case "W+":
-											str = d;
-											break;
-										default:
-											str = d + "";
+								if (!rxp.test(fmt)) return;
 
-											if (RegExp.$1.length > str.length) {
-												for (let i = str.length; i < RegExp.$1.length; i++) str = "0" + str;
-											}
-											break;
-									}
+								let len = RegExp.$1.length;
 
-									result = result.replace(rxp, str);
-								}
-							);
-						}
-
-						return callback ? callback(result, value) : result;
-					}).apply(api, [value, opt, callback]);
-				case "array":
-					/**
-					 * @param {Array} value
-					 * @param {number|object} opt 参数
-					 *    @param {number} [tab=0] 缩进空格数
-					 *    @param {number} [level] 缩进级别
-					 *    @param {boolean} [opt.buf=false] 是否作为字节数据处理
-					 *    @param {boolean} [opt.str=false] 是否转换成字符串内容
-					 *    @param {string} [opt.char= ] 字节间隔
-					 *    @param {number} [opt.offset=0] 偏移量
-					 *    @param {number} [opt.count=value.length] 总长度
-					 * @param {function} [callback]
-					 */
-					return (function (value, opt, callback) {
-						let result = [],
-							buf, char, offset, count, str,
-							tab, level;
-
-						switch (typeof(opt)) {
-							case "object":
-								if (opt) {
-									tab = opt.tab;
-									level = opt.level;
-									char = opt.char;
-									buf = opt.buf;
-									offset = opt.offset;
-									count = opt.count;
-									str = opt.str;
-								}
-								break;
-							case "number":
-								tab = opt;
-								break;
-							case "boolean":
-								buf = opt;
-								break;
-							case "string":
-								char = opt;
-								break;
-						}
-
-						if (buf === true) {
-							if (!jShow.isString(char)) char = " ";
-							if (!jShow.isNumber(offset)) offset = 0;
-							else if (offset < 0) offset += value.length;
-							if (!jShow.isNumber(count)) count = value.length;
-							else if (count < 1) count = 0;
-							if (offset < 0) offset = 0;
-							count = Math.min(value.length, offset + count) - 1;
-							if (str = str === true) char = "";
-
-							for (let i = count, d, c; i >= offset; i--) {
-								d = value[i];
-
-								if (str) result.unshift(String.fromCharCode(d));
-								else {
-									do {
-										c = d & 0xFF;
-										result.unshift((c < 0x10 ? "0" : "") + c.toString(16).toUpperCase());
-
-										d >>>= 8;
-									}
-									while (d);
-								}
-							}
-
-							result = result.join(char);
-						}
-						else {
-							tab = parseInt(jShow.isNumber(tab) && tab >= 0 ? tab : 0);
-							level = parseInt(jShow.isNumber(level) && level >= 0 ? level : 0);
-
-							let fmt = ["", "[", "]", ",", ""],
-								o, d, i;
-
-							if (tab > 0) {
-								d = tab * level;
-
-								for (i = 0; i < tab; i++) fmt[4] = " " + fmt[4];
-								for (i = 0; i < d; i++) fmt[0] += " ";
-								fmt[1] = fmt[0] + fmt[1] + "\n";
-								fmt[2] = "\n" + fmt[0] + fmt[2];
-								fmt[3] = fmt[3] + "\n";
-								fmt[4] = fmt[0] + fmt[4];
-							}
-
-							level++;
-
-							if (!jShow.isObject(opt)) opt = {};
-							opt.tab = tab;
-							opt.level = level;
-
-							for (i = 0; i < value.length; i++) {
-								d = value[i];
-								o = opt[i] || opt;
-								switch (jShow.type(d, true)) {
-									case "object":
-									case "array":
-										result.push(fmt[4] + this.toString(d, o).trim());
+								switch (k) {
+									case "y+":
+										str = String(d);
+										if (len >= 2 && len < 4) str = str.substr(-2);
 										break;
-									case "string":
-										result.push(fmt[4] + "\"" + this.toString(d, o) + "\"");
-										break;
-									case "number":
-										d = o.len ? this.toFloat(d, o.len, o.def || 0) : this.toInteger(d, o.def || 0);
-										result.push(fmt[4] + d);
+									case "w+":
+									case "W+":
+										str = d;
 										break;
 									default:
-										result.push(fmt[4] + this.toString(d, o));
+										str = String(d);
+
+										if (len > str.length) {
+											for (let i = str.length; i < len; i++) str = `0${str}`;
+										}
 										break;
 								}
+
+								fmt = fmt.replace(rxp, str);
 							}
+						);
+					}
 
-							result = fmt[1] + result.join(fmt[3]) + fmt[2];
-						}
+					data = fmt;
 
-						return jShow.isFunction(callback) ? callback(result, value) : result;
-					}).apply(api, [value, opt, callback]);
-				case "object":
+					return func ? func(data, value) : data;
+				}
+				case "array": {
 					/**
-					 * @param {object} value
-					 * @param {number|object} opt 参数
-					 *    @param {number} [opt.tab=0] 缩进空格数
-					 *    @param {number} [opt.level] 缩进级别
+					 * @param {Array} value
+					 * @param {number|object} opt
+					 *    @param {number} [opt.tab=0] <tab conver blank space>
+					 *    @param {number} [opt.level] <tab level>
+					 *    @param {boolean} [opt.buf=false] <is parse as buffer>
+					 *    @param {boolean} [opt.str=false] <is conver to string>
+					 *    @param {string} [opt.char= ] <char>
+					 *    @param {number} [opt.offset=0] <offset data>
+					 *    @param {number} [opt.count=value.length] <count data>
 					 * @param {function} [callback]
 					 */
-					return (function (value, opt, callback) {
-						let tab, level;
+					let {
+							buf = false,
+							tab = 0,
+							char
+						} = opt;
 
-						if (callback === void(0)) callback = opt;
-						switch (typeof(opt)) {
-							case "object":
-								if (opt) {
-									tab = opt.tab;
-									level = opt.level;
+					switch (typeof(opt)) {
+						case "number":
+							tab = opt;
+							break;
+						case "boolean":
+							buf = opt;
+							break;
+						case "string":
+							char = opt;
+							break;
+					}
+
+					let list = [];
+
+					if (buf === true) {
+						let {
+								str    = false,
+								offset = 0,
+								count  = data.length
+							} = opt;
+
+						str = str === true;
+						if (!$.isString(char)) char = " ";
+						if (!$.isNumber(offset)) offset = 0;
+						if (!$.isNumber(count)) count = value.length;
+						if (!$.isString(char)) char = "";
+						if (str) char = "";
+
+						if (offset < 0) offset += data.length;
+						if (offset < 0) offset = 0;
+						if (count < 1) count = 0;
+
+						count = Math.min(data.length, offset + count) - 1;
+
+						for (let i = count, d, c; i >= offset; i--) {
+							d = data[i];
+
+							if (str) {
+								list.unshift(String.fromCharCode(d));
+							}
+							else {
+								let n;
+
+								do {
+									c = d & 0xff;
+									n = c < 0x10 ? "0" : "";
+
+									list.unshift(`${n}${c.toString().toUpperCase()}`);
+
+									d >>>= 8;
 								}
-								break;
-							case "number":
-								tab = opt;
-								break;
+								while (d);
+							}
 						}
-						tab = parseInt(jShow.isNumber(tab) && tab >= 0 ? tab : 0);
-						level = parseInt(jShow.isNumber(level) && level >= 0 ? level : 0);
 
-						let result = [],
-							fmt    = ["", "{", "}", ",", "\"", "\":"],
-							o, d, i;
+						data = list.join(char);
+					}
+					else {
+						let {
+								level
+							} = opt;
+
+						if (!$.isNumber(tab, {min: 0})) tab = 0;
+						if (!$.isNumber(level, {min: 0})) level = 0;
+
+						let fmt = ["", "[", "]", ",", ""];
 
 						if (tab > 0) {
-							d = tab * level;
+							let d = tab * level;
 
-							for (i = 0; i < tab; i++) fmt[4] = " " + fmt[4];
-							for (i = 0; i < d; i++) fmt[0] += " ";
-							fmt[1] = fmt[0] + fmt[1] + "\n";
-							fmt[2] = "\n" + fmt[0] + fmt[2];
-							fmt[3] = fmt[3] + "\n";
-							fmt[4] = fmt[0] + fmt[4];
-							fmt[5] = fmt[5] + " ";
+							for (let i = 0; i < tab; i++) fmt[4] = ` ${fmt[4]}`;
+							for (let i = 0; i < d; i++) fmt[0] = `${fmt[0]} `;
+							fmt[1] = `${fmt[0]}${fmt[1]}\n`;
+							fmt[2] = `\n${fmt[0]}${fmt[2]}`;
+							fmt[3] = `${fmt[3]}\n`;
+							fmt[4] = `${fmt[0]}${fmt[4]}`;
 						}
 
-						level++;
+						level += 1;
 
-						if (!jShow.isObject(opt)) opt = {};
-						opt.tab = tab;
+						if ($.isObject(opt)) opt = {};
+						opt.tab   = tab;
 						opt.level = level;
 
-						for (i in value) {
-							d = value[i];
-							o = opt[i] || opt;
-							switch (jShow.type(d, true)) {
-								case "object":
-								case "array":
-									result.push(fmt[4] + i + fmt[5] + this.toString(d, o).trim());
-									break;
-								case "string":
-									result.push(fmt[4] + i + fmt[5] + "\"" + this.toString(d, o) + "\"");
+						for (let i = 0, d, o, t; i < data.length; i++) {
+							d = data[i];
+							t = $.type(d, true);
+							o = opt[i] || opt[t] || opt;
+
+							switch (t) {
+								default:
+									d = api.toString(d, o).trim();
 									break;
 								case "number":
-									d = o.len ? this.toFloat(d, o.len, o.def || 0) : this.toInteger(d, o.def || 0);
-									result.push(fmt[4] + i + fmt[5] + d);
+									d = o.len ? api.toFloat(d, o) : api.toInteger(d, o);
 									break;
-								default:
-									result.push(fmt[4] + i + fmt[5] + this.toString(d, o));
+								case "string":
+									d = api.toString(d, o);
+									d = `\"${d}\"`;
 									break;
 							}
+
+							list.push(`${fmt[4]}${d}`);
 						}
 
-						result = fmt[1] + result.join(fmt[3]) + fmt[2];
+						data = list.join(fmt[3]);
+						data = `${fmt[1]}${data}${fmt[2]}`;
+					}
 
-						return jShow.isFunction(callback) ? callback(result, value) : result;
-					}).apply(api, [value, opt, callback]);
-				case "uint8array":
+					return func ? func(data, value) : data;
+				}
+				case "object": {
 					/**
-					 * @param {Uint8Array} value
-					 * @param {string|number|object} opt 参数
-					 *    @param {boolean} [opt.str=false] 是否转换成字符串内容
-					 *    @param {string} [opt.char= ] 字节间隔
-					 *    @param {number} [opt.offset=0] 偏移量
-					 *    @param {number} [opt.count=value.length] 总长度
+					 * @param {object} value
+					 * @param {number|object} opt
+					 *    @param {number} [opt.tab=0] <tab conver blank space>
+					 *    @param {number} [opt.level] <tab level>
 					 * @param {function} [callback]
 					 */
-					return (function (value, opt, callback) {
-						let result = [],
-							char, offset, count, str;
+					let {
+							tab   = 0,
+							level = 0
+						} = opt;
 
-						switch (typeof(opt)) {
-							case "object":
-								if (opt) {
-									char = opt.char;
-									offset = opt.offset;
-									count = opt.count;
-									str = opt.str;
-								}
-								break;
-							case "string":
-								char = opt;
+					if (typeof(opt) === "number") tab = opt;
+
+					if (!$.isNumber(tab, {min: 0})) tab = 0;
+					if (!$.isNumber(level, {min: 0})) level = 0;
+
+					let list = [];
+					let fmt  = ["", "{", "}", ",", "\"", "\":"];
+
+					if (tab > 0) {
+						let d = tab * level;
+
+						for (let i = 0; i < tab; i++) fmt[4] = ` ${fmt[4]}`;
+						for (let i = 0; i < d; i++) fmt[0] = `${fmt[0]} `;
+						fmt[1] = `${fmt[0]}${fmt[1]}\n`;
+						fmt[2] = `\n${fmt[0]}${fmt[2]}`;
+						fmt[3] = `${fmt[3]}\n`;
+						fmt[4] = `${fmt[0]}${fmt[4]}`;
+						fmt[5] = `${fmt[5]} `;
+					}
+
+					level += 1;
+
+					if (!$.isObject(opt)) opt = {};
+					opt.tab   = tab;
+					opt.level = level;
+
+					let d,
+						o,
+						t;
+
+					for (let k in data) {
+						d = data[k];
+						t = $.type(d, true);
+						o = opt[k] || opt[t] || opt;
+
+						switch (t) {
+							default:
+								d = api.toString(d, o).trim();
 								break;
 							case "number":
-								offset = opt;
+								d = o.len ? this.toFloat(d, o) : this.toInteger(d, o);
+								break;
+							case "string":
+								d = api.toString(d, o);
+								d = `\"${d}\"`;
 								break;
 						}
 
-						for (const v of value.values()) result.push(v);
+						list.push(`${fmt[4]}${k}${fmt[5]}${d}`);
+					}
 
-						return api.toString(result, {
-							buf:    true,
-							str:    str,
-							char:   char,
-							offset: offset,
-							count:  count
-						}, callback);
-					}).apply(api, [value, opt, callback]);
+					data = list.join(fmt[3]);
+					data = `${fmt[1]}${data}${fmt[2]}`;
+
+					return func ? func(data, value) : data;
+				}
+				case "uint8array": {
+					/**
+					 * @param {Uint8Array} value
+					 * @param {string|number|object} opt
+					 *    @param {boolean} [opt.str=false] <is conver string>
+					 *    @param {string} [opt.char= ] <char>
+					 *    @param {number} [opt.offset=0] <offset data>
+					 *    @param {number} [opt.count=value.length] <count data>
+					 * @param {function} [callback]
+					 */
+					let {
+							str    = false,
+							char   = "",
+							offset = 0,
+							count  = data.length
+						} = opt;
+
+					switch (typeof(opt)) {
+						case "string":
+							char = opt;
+							break;
+						case "number":
+							offset = opt;
+							break;
+					}
+
+					data = [...data];
+
+					str = str === true;
+					if (!$.isString(char)) char = "";
+					if (!$.isNumber(offset, {min: 0})) offset = 0;
+					if (!$.isNumber(count, {min: 0})) count = data.length;
+
+					return api.toString(data, {buf: true, str, char, offset, count}, func);
+				}
 			}
 		},
 		/**
-		 * 转换日期
+		 * Any to date
 		 *
 		 * @param {*} value
-		 * @param {date} [def=NOW]
+		 * @param {date|object} [opt]
+		 *    @param {date} [opt.def=NOW] <default is now>
 		 * @param {function} [callback=null]
 		 * @returns {*}
 		 */
-		toDate:     (value, def, callback) => {
-			let result;
+		toDate (value, opt, callback = opt) {
+			let data = value;
 
-			if (callback === void(0)) callback = def;
+			let {
+					def = 0
+				} = opt;
 
-			def = jShow.isDate(def) ? new Date(def.getTime()) : new Date(2000, 0, 1);
+			if ($.type(opt, true) === "date") def = opt;
 
-			switch (jShow.type(value, true)) {
+			if (!$.isDate(def)) def = new Date();
+
+			switch ($.type(data, true)) {
 				default:
-					result = new Date(0);
+					data = new Date(0);
 					break;
 				case "date":
-					result = new Date(value.getTime());
+					data = new Date(data.getTime());
 					break;
 				case "number":
-					result = new Date(isNaN(value) ? 0 : value);
+					if (isNaN(data)) data = 0;
+					data = new Date(data);
 					break;
-				case "string":
-					if (/\D/g.test(value)) {
-						result = (function (value, def) {
-							const safeDate = i => {
-									  return (v, n, d) => {
-										  switch (i) {
-											  case 0:
-												  return v;
-											  case 1:
-												  return v < 1 || v > 12 ? d : v;
-											  case 2:
-												  return v < 1 || v > 31 ? d : v;
-											  default:
-												  return d;
-										  }
-									  }
-								  },
-								  safeTime = i => {
-									  return (v, n, d) => {
-										  switch (i) {
-											  case 0:
-												  return v < 1 || v > 23 ? d : v;
-											  case 1:
-											  case 2:
-												  return v < 0 || v > 59 ? d : v;
-											  case 3:
-												  return v < 0 || v > 999 ? d : v;
-											  default:
-												  return d;
-										  }
-									  };
-								  };
-
-							let sdt   = [value.split(" "), [], []],
-								rDate = [def.getFullYear(), def.getMonth() + 1, def.getDate()],
-								rTime = [def.getHours(), def.getMinutes(), def.getSeconds(), def.getMilliseconds()],
-								tmp;
-
-							jShow.each(sdt[0], (d, i) => {
-								tmp = sdt[0][i];
-
-								if (tmp.indexOf("-") > 0) {
-									if (sdt[1].length == 0) sdt[1] = tmp.split("-");
-								}
-								else if (tmp.indexOf(":") > 0) {
-									if (sdt[2].length == 0) sdt[2] = tmp.split(":");
-								}
-							});
-
-							if (sdt[1].length != 3) sdt[1] = [def.getFullYear(), def.getMonth() + 1, def.getDate()];
-							if (sdt[2].length < 3 || sdt[2].length > 4) sdt[2] = [def.getHours(), def.getMinutes(), def.getSeconds(), def.getMilliseconds()];
-							else if (sdt[2].length == 3) sdt[2].push(0);
-
-							jShow.each(sdt[1], (d, i) => rDate[i] = this.toInteger(d, rDate[i], safeDate(i)));
-							jShow.each(sdt[2], (d, i) => rTime[i] = this.toInteger(d, rTime[i], safeTime(i)));
-
-							tmp = new Date(rDate[0], rDate[1] - 1, rDate[2], rTime[0], rTime[1], rTime[2]);
-							tmp.setMilliseconds(rTime[3]);
-
-							return tmp;
-						}).call(api, (value || "").replace("T", " ").replace("Z", "").replace(/,|-|\//g, "-").replace(/\./g, ":"), def);
+				case "string": {
+					if (/\d/g.test(data)) {
+						data = api.toDate(Number(data), def);
+						break;
 					}
-					else {
-						value = Number(value);
-						result = new Date(isNaN(value) ? 0 : value);
+
+					data = (data || "").replace("T", " ").replace("Z", "");
+					data = data.replace(/,|-/g, "/").replace(/\./g, ":");
+					data = data.split(" ");
+
+					if (data.length > 2) {
+						data = api.toDate(def, def);
+						break;
 					}
+
+					const rDate = [def.getFullYear(), def.getMonth() + 1, def.getDate()];
+					const rTime = [0, 0, 0, 0];
+
+					let _date;
+					let _time;
+
+					data.forEach(d => {
+						if (d.indexOf("/") > 0) _date = d;
+						else if (d.indexOf(":") > 0) _time = d;
+					});
+
+					_date = api.isDate(_date, true) ? _date.split("/").map(d => Number(d)) : rDate;
+					_time = api.isTime(_time, true) ? _time.split(":").map(d => Number(d)) : rTime;
+
+					data = new Date(_date[0], _date[1] - 1, _date[2], _time[0], _time[1], _time[2], _time[3]);
 					break;
+				}
 			}
 
-			return jShow.isFunction(callback) ? callback(result, value, def) : result;
+			return $.isFunction(callback) ? callback(data, value, def) : data;
 		},
 		/**
-		 * 转换成对象，强制转换
+		 * Any to Object
+		 *
+		 * @Deprecated: no safe, will remove this function
 		 *
 		 * @param {*} value
 		 * @returns {object}
 		 */
-		toObject:   value => {
-			if (jShow.isString(value) && value >= 2) {
-				try {
-					let hf = [value.charAt(0), value.charAt(value.length - 1), value];
+		toObject (value) {
+			if (!$.isString(value, {min: 2})) return null;
 
-					if (hf[0] == "{" && hf[1] == "}") hf[2] = "(" + value + ")";
+			try {
+				let hf = [value.charAt(0), value.charAt(value.length - 1), value];
 
-					return eval(hf[2]);
-				}
-				catch (e) {
-					console.error("String to Object is Error ", e.message);
-				}
+				if (hf[0] === "{" && hf[1] === "}") hf[2] = "(" + value + ")";
+
+				return eval(hf[2]);
+			}
+			catch (e) {
+				console.error("String to Object is Error ", e.message);
 			}
 
 			return null;
 		},
 		/**
-		 * 转换成数组，将所有参数拼接成数组
+		 * Any to array with arguments
 		 *
 		 * @param {*} value
-		 * @param {boolean} [deep=true] 是否深度拼接
 		 * @returns {array}
 		 */
-		toArray:    function (value, deep) {
-			let result = [];
+		toArray (...value) {
+			let data;
 
-			if (deep !== false) {
-
+			if (value.length === 1) {
+				switch ($.type(value, true)) {
+					default:
+						data = [value];
+						break;
+					case "array":
+					case "arguments":
+					case "set":
+						data = [...value];
+						break;
+				}
 			}
 			else {
-				result = Array.prototype.push.apply(result, value);
+				data = [];
+
+				value.forEach(d => {
+					data = [...data, ...api.toArray(d)];
+				});
 			}
 
-			jShow.each(arguments, (d, i, t) => {
-				if (t == "array") Array.prototype.push.apply(result, api.toArray.apply(null, d));
-				else result.push(d);
-			}, true);
-
-			return result;
+			return data;
 		},
 		/**
-		 * 转换成JSON对象
+		 * String to json object
 		 *
 		 * @param {string} value
-		 * @param {function} [callback=null] 处理函数，对每次键值对转换进行处理
+		 * @param {function} [callback=null] <custom function, key/vale oper by every time>
 		 * @returns {object|Array}
 		 */
-		toJSON:     (value, callback) => {
+		toJSON (value, callback) {
+			let data = String(value).trim();
+			let func = $.isFunction(callback) ? callback : null;
+
+			const parseTag    = (type, value, REGEXP) => {
+				if (type < 0 || type > 2) return value;
+
+				let i = 0,
+					d = "";
+
+				for (let l = 0, c = 0; i < value.length; i++) {
+					c = value[i];
+					d += c;
+					c = c.charCodeAt();
+
+					if (type === 0) {
+						//字符串
+						if (!l) l = c;
+						else if (c === 92 || (l & 64)) l ^= 64;
+						else if (l === c) break;
+					}
+					else if (type === 1) {
+						//对象
+						if (c === 39 || c === 34) {
+							d += parseTag(0, value.substr(i)).substr(1);
+							i = d.length - 1;
+						}
+						else if (c === 123) {
+							l += 1;
+						}
+						else if (c === 125) {
+							l -= 1;
+							if (!l) break;
+						}
+					}
+					else if (type === 2) {
+						//数组
+						if (c === 39 || c === 34) {
+							d += parseTag(0, value.substr(i)).substr(1);
+							i = d.length - 1;
+						}
+						else if (c === 91) {
+							l += 1;
+						}
+						else if (c === 93) {
+							l -= 1;
+							if (!l) break;
+						}
+					}
+				}
+
+				if (REGEXP && i < value.length) REGEXP.lastIndex -= value.length - d.length;
+
+				return d;
+			};
 			const parseSimple = (parent, key, value, callback, STRING, REGEXP) => {
-					  let str;
+				let str = value[0];
 
-					  if (value[0] == "'" || value[0] == "\"") value = parseTag(0, value, REGEXP);
+				if (str === "'" || str === "\"") value = parseTag(0, value, REGEXP);
 
-					  str = STRING.Trim(value, ["\"", "'"]);
+				str = STRING.Trim(value, ["\"", "'"]);
 
-					  if (str != value) parent[key] = str;
-					  else {
-						  switch (str) {
-							  case "true":
-								  parent[key] = true;
-								  break;
-							  case "false":
-								  parent[key] = false;
-								  break;
-							  case "null":
-							  case "undefined":
-								  parent[key] = null;
-								  break;
-							  default:
-								  if (/^function\s*\(.*?\)\s*\{\s\S*?\}$/i.test(str)) delete parent[key];
-								  else parent[key] = jShow.isNumber(str, {nan: false, str: true}) ? Number(str) : str;
-								  break;
-						  }
-					  }
+				if (str !== value) {
+					parent[key] = str;
+				}
+				else {
+					switch (str) {
+						case "true":
+							parent[key] = true;
+							break;
+						case "false":
+							parent[key] = false;
+							break;
+						case "null":
+						case "undefined":
+							parent[key] = null;
+							break;
+						default:
+							if (/^function\s*\(.*?\)\s*\{\s\S*?\}$/i.test(str)) {
+								delete parent[key];
+							}
+							else {
+								parent[key] = $.isNumber(str, {nan: false, str: true}) ? Number(str) : str;
+							}
+							break;
+					}
+				}
 
-					  if (callback) callback(parent, key, parent[key]);
-				  },
-				  parseObject = (parent, value, callback, STRING, REGEXP) => {
-					  let rxp = [
-							  /["']?(\w{1}[\w\-\.]*)["']?\s*:\s*((?:\{[\s\S]*\})|(?:\[[\s\S]*\])|(?:[ef]?\-?\d+\.?\d*)|(?:true|false|null|undefined)|(?:["'][\s\S]*["'])|(?:function\s*\(.*?\)\s*\{[\s\S]*?\})){1},/g,
-							  /^\{[\s\S]*\}$/,
-							  /^\[[\s\S]*\]$/
-						  ],
-						  tmp;
+				if (callback) callback(parent, key, parent[key]);
+			};
+			const parseObject = (parent, value, callback, STRING, REGEXP) => {
+				const rxp = [
+					/["']?(\w{1}[\w\-\.]*)["']?\s*:\s*((?:\{[\s\S]*\})|(?:\[[\s\S]*\])|(?:[ef]?\-?\d+\.?\d*)|(?:true|false|null|undefined)|(?:["'][\s\S]*["'])|(?:function\s*\(.*?\)\s*\{[\s\S]*?\})){1},/g,
+					/^\{[\s\S]*\}$/,
+					/^\[[\s\S]*\]$/
+				];
 
-					  if (REGEXP) value = parseTag(1, value, REGEXP);
+				if (REGEXP) value = parseTag(1, value, REGEXP);
 
-					  value = value
-						  .replace(/\]\s*\}$/g, "]}").replace(/\}\s*\}$/g, "}}").replace(/\s*\}$/g, "}")
-						  .replace(/\}$/g, ",}").replace(/^\s*/, "");
+				value = value.replace(/\]\s*\}$/g, "]}").replace(/\}\s*\}$/g, "}}").replace(/\s*\}$/g, "}");
+				value = value.replace(/\}$/g, ",}").replace(/^\s*/, "");
 
-					  while (tmp = rxp[0].exec(value)) {
-						  if (tmp.length != 3) continue;
+				let r,
+					v;
+				while (r = rxp[0].exec(value)) {
+					if (r.length !== 3) continue;
 
-						  tmp[1] = STRING.Trim(tmp[1].trim(), ["\"", "'"]).trim();
-						  tmp[2] = String(tmp[2]).trim();
-						  if (rxp[1].test(tmp[2])) parseObject(parent[tmp[1]] = {}, tmp[2], callback, STRING, rxp[0]);
-						  else if (rxp[2].test(tmp[2])) parseArray(parent[tmp[1]] = [], tmp[2], callback, STRING, rxp[0]);
-						  else parseSimple(parent, tmp[1], tmp[2], callback, STRING, rxp[0]);
-					  }
-				  },
-				  parseArray  = (parent, value, callback, STRING, REGEXP) => {
-					  let rxp = [
-						  [/^["']/, /["']\s*,/g, "\", ", /"[\s\S]*",/g, ""],
-						  [/^\{/, /\}\s*,/g, "}, ", /\{[\s\S]*\},/g, ["{", "}"]],
-						  [/^\[/, /\]\s*,/g, "], ", /\[[\s\S]*\],/g, ["{", "}"]],
-						  [/^[ef]?\-?\d+\.?\d*\s*,/, /\s*,/g, ", ", /[ef]?\-?\d+\.?\d*/g, ""],
-						  [/^(?:true|false|null|undefined)\s*,/, /\s*,/g, ", ", /true|false|null|undefined/g, ""]
-					  ];
+					r[1] = STRING.Trim(r[1].trim(), ["\"", "'"]).trim();
+					r[2] = String(r[2]).trim();
 
-					  if (REGEXP) value = parseTag(2, value, REGEXP);
+					if (rxp[1].test(r[2])) {
+						v            = {};
+						parent[r[1]] = v;
+						parseObject(v, r[2], callback, STRING, rxp[0]);
+					}
+					else if (rxp[2].test(r[2])) {
+						v            = [];
+						parent[r[1]] = v;
+						parseArray(v, r[2], callback, STRING, rxp[0]);
+					}
+					else {
+						parseSimple(parent, r[1], r[2], callback, STRING, rxp[0]);
+					}
+				}
+			};
+			const parseArray  = (parent, value, callback, STRING, REGEXP) => {
+				const rxp = [
+					[/^["']/, /["']\s*,/g, "\", ", /"[\s\S]*",/g, ""],
+					[/^\{/, /\}\s*,/g, "}, ", /\{[\s\S]*\},/g, ["{", "}"]],
+					[/^\[/, /\]\s*,/g, "], ", /\[[\s\S]*\],/g, ["{", "}"]],
+					[/^[ef]?\-?\d+\.?\d*\s*,/, /\s*,/g, ", ", /[ef]?\-?\d+\.?\d*/g, ""],
+					[/^(?:true|false|null|undefined)\s*,/, /\s*,/g, ", ", /true|false|null|undefined/g, ""]
+				];
 
-					  value = STRING.Trim(
-						  value
-							  .replace(/\[\s*\{$/g, "[{").replace(/\[\s*\[$/g, "[[").replace(/\[\s*$/g, "[")
-							  .replace(/\}\s*\]$/g, "}]").replace(/\]\s*\]$/g, "]]").replace(/\s*\]$/g, "]")
-							  .replace(/\]$/g, ",]"), ["[", "]"]).replace(/^\s*/, "");
+				if (REGEXP) value = parseTag(2, value, REGEXP);
 
-					  for (let i = 0, tmp, val; i < rxp.length; i++) {
-						  if (!rxp[i][0].test(value)) continue;
+				value = value.replace(/\[\s*\{$/g, "[{").replace(/\[\s*\[$/g, "[[").replace(/\[\s*$/g, "[");
+				value = value.replace(/\}\s*\]$/g, "}]").replace(/\]\s*\]$/g, "]]").replace(/\s*\]$/g, "]");
+				value = value.replace(/\]$/g, ",]");
 
-						  value = value.replace(rxp[i][1], rxp[i][2]);
+				value = STRING.Trim(value, ["[", "]"]).replace(/^\s*/, "");
 
-						  while (tmp = rxp[i][3].exec(value)) {
-							  tmp[0] = parseTag(i, tmp[0], rxp[i][3]);
+				for (let i = 0, r, v; i < rxp.length; i++) {
+					if (!rxp[i][0].test(value)) continue;
 
-							  if (!rxp[i][4]) parseSimple(parent, parent.length, tmp[0], callback, STRING);
-							  else {
-								  parent.push(i == 1 ? {} : []);
-								  val = parent[parent.length - 1];
+					value = value.replace(rxp[i][1], rxp[i][2]);
 
-								  if (i == 1) parseObject(val, tmp[0], callback, STRING);
-								  else parseArray(val, tmp[0], callback, STRING);
-							  }
-						  }
+					while (r = rxp[i][3].exec(value)) {
+						r[0] = parseTag(i, r[0], rxp[i][3]);
 
-						  break;
-					  }
-				  },
-				  parseTag    = (type, value, REGEXP) => {
-					  if (type < 0 || type > 2) return value;
+						if (rxp[i][4]) {
+							parent.push(i === 1 ? {} : []);
+							v = parent[parent.length - 1];
 
-					  let i = 0,
-						  d = "";
+							if (i === 1) parseObject(v, r[0], callback, STRING);
+							else parseArray(v, r[0], callback, STRING);
+						}
+						else {
+							parseSimple(parent, parent.length, r[0], callback, STRING);
+						}
+					}
 
-					  for (let l = 0, c = 0; i < value.length; i++) {
-						  d += (c = value[i]);
-						  c = c.charCodeAt();
+					break;
+				}
+			};
 
-						  if (type == 0) {
-							  //字符串
-							  if (!l) l = c;
-							  else if (c == 92 || l & 64) l ^= 64;
-							  else if (l == c) break;
-						  }
-						  else if (type == 1) {
-							  //对象
-							  if (c == 39 || c == 34) i = (d += parseTag(0, value.substr(i)).substr(1)).length - 1;
-							  else if (c == 123) l++;
-							  else if (c == 125 && !(--l)) break;
-						  }
-						  else if (type == 2) {
-							  //数组
-							  if (c == 39 || c == 34) i = (d += parseTag(0, value.substr(i)).substr(1)).length - 1;
-							  else if (c == 91) l++;
-							  else if (c == 93 && !(--l)) break;
-						  }
-					  }
+			let result;
 
-					  if (REGEXP && i < value.length) REGEXP.lastIndex -= value.length - d.length;
+			if (/^\[[\s\S]*\]$/.test(data)) {
+				result = [];
 
-					  return d;
-				  };
+				parseArray(result, data, func, STRING);
+			}
+			else {
+				if (!/^\{[\s\S]*\}$/.test(data)) data = `{${data}}`;
 
-			let result = null;
+				result = {};
 
-			value = String(value).trim();
-			if (!jShow.isFunction(callback)) callback = null;
-
-			if (/^\[[\s\S]*\]$/.test(value)) parseArray(result = [], value, callback, jShow.String);
-			else parseObject(result = {}, /^\{[\s\S]*\}$/.test(value) ? value : ("{" + value + "}"), callback, jShow.String);
+				parseObject(result, data, func, STRING);
+			}
 
 			return result;
 		},
 		/**
-		 * 转换成HTML标签
+		 * String to html tag / Html tag to string
 		 *
 		 * @param {string} value
-		 * @param {boolean} [tab=true] tab识别
-		 * @param {boolean} [rev=false] 反向转换
+		 * @param {boolean|object} [opt]
+		 *    @param {boolean} [opt.tab=true] <is parse tab tag>
+		 *    @param {boolean} [opt.rev=false] <is reverse conver like html tag to string>
 		 * @returns {string}
 		 */
-		toHtml:     (value, tab, rev) => {
-			tab = tab !== false;
+		toHtml (value, opt) {
+			let {
+					tab = true,
+					rev = false
+				} = opt;
 
-			return jShow.String.Filter(value,
-				rev === true ? [
-					{reg: "&lt;", text: "<"},
-					{reg: "&gt;", text: ">"},
-					{reg: "&quot;", text: "\""},
-					{reg: "&apos;", text: "\'"},
-					{reg: "<br>", text: "\n"},
-					{reg: tab ? "&nbsp;&nbsp;" : "　　", text: "\t"},
-					{reg: "&nbsp;", text: " "},
-					{reg: "&amp;", text: "&"}
-				] : [
-					{reg: "&", text: "&amp;"},
-					{reg: "<", text: "&lt;"},
-					{reg: ">", text: "&gt;"},
-					{reg: "\"", text: "&quot;"},
-					{reg: "\'", text: "&apos;"},
-					{reg: "\r\n", text: "<br>"},
-					{reg: "\n", text: "<br>"},
-					{reg: " ", text: tab ? "&nbsp;" : "　"},
-					{reg: "\t", text: tab ? "&nbsp;&nbsp;" : "　　"}
-				]);
+			if (typeof(opt) === "boolean") rev = opt;
+
+			tab = tab === true;
+
+			const tHT = [
+				{reg: "&", text: "&amp;"},
+				{reg: "<", text: "&lt;"},
+				{reg: ">", text: "&gt;"},
+				{reg: "\"", text: "&quot;"},
+				{reg: "\'", text: "&apos;"},
+				{reg: "\r\n", text: "<br>"},
+				{reg: "\n", text: "<br>"},
+				{reg: " ", text: tab ? "&nbsp;" : "　"},
+				{reg: "\t", text: tab ? "&nbsp;&nbsp;" : "　　"}
+			];
+			const fHT = [
+				{reg: "&lt;", text: "<"},
+				{reg: "&gt;", text: ">"},
+				{reg: "&quot;", text: "\""},
+				{reg: "&apos;", text: "\'"},
+				{reg: "<br>", text: "\n"},
+				{reg: tab ? "&nbsp;&nbsp;" : "　　", text: "\t"},
+				{reg: "&nbsp;", text: " "},
+				{reg: "&amp;", text: "&"}
+			];
+
+			return STRING.Filter(value, rev === true ? fHT : tHT);
 		},
 		/**
-		 * 转换中文金额
+		 * Number to conver chinese money code
 		 *
 		 * @param {number} value
-		 * @param {number} [def=0]
+		 * @param {number|array|object} [opt]
+		 *    @param {number} [opt.def=0] <default value>
+		 *    @param {array} [opt.bit] <chinese format code>
 		 * @returns {string}
 		 */
-		toMoney:    (value, def) => {
-			value = [api.toFloat(value, 2, def), 0];
-			value[1] = parseInt(value[0] * 100 - parseInt(value[0]) * 100);
+		toMoney (value, opt) {
+			let {
+					def = 0,
+					bit
+				} = opt;
 
-			value[0] = api.toString(value[0], {
-				chs: true, bit: [
+			switch ($.type(opt, true)) {
+				case "number":
+					def = opt;
+					break;
+				case "array":
+					bit = opt;
+					break;
+			}
+
+			if (!$.isArray(bit, {min: 4})) {
+				bit = [
 					["零", "壹", "贰", "叁", "肆", "伍", "陆", "柒", "捌", "玖"],
 					["", "拾", "佰", "千"],
-					["", "万", "亿", "兆"]
-				]
-			});
-			value[1] = value[1] ? api.toString(value[1], {
-				chs: true, bit: [
-					["零", "壹", "贰", "叁", "肆", "伍", "陆", "柒", "捌", "玖"],
-					["分", "角", "", ""],
-					["", "", "", ""]
-				]
-			}) : "整";
+					["", "万", "亿", "兆"],
+					["分", "角", "", ""]
+				];
+			}
 
-			return value[0] + "元" + value[1];
+			let data = [api.toFloat(value, {def, len: 2}), 0];
+
+			data[1] = parseInt(data[0] * 100 - parseInt(data[0]) * 100);
+
+			data[0] = api.toString(data[0], {chs: true, bit: [bit[0], bit[1], bit[2]]});
+			data[1] = data[1] ? api.toString(data[1], {chs: true, bit: [bit[0], bit[3], ["", "", "", ""]]}) : "整";
+
+			return `${data[0]}元${data[1]}`;
 		},
 		/**
-		 * 格式化url，返回直接访问网址
+		 * String format url
 		 *
 		 * @param {string} value
 		 * @returns {string}
 		 */
-		toUrl:      value => {
-			value = jShow.isString(value) ? value.trim() : "";
-			if (value) {
-				if (!/^[A-Za-z][A-Za-z0-9]*:\/\//.test(value)) value = "http://" + value;
-				value = value.replace(/\/\.\//g, "/").replace(/^([A-Za-z][A-Za-z0-9]*:\/\/[\w\.-]+)\:(80)?\//g, "$1/").replace(/([^:/])\/+\//g, "$1/");
+		toUrl (value) {
+			let data = $.isString(value) ? value.trim() : "";
+
+			if (data) {
+				if (!/^[A-Za-z][A-Za-z0-9]*:\/\//.test(data)) data = `http://${data}`;
+
+				data = data.replace(/\/\.\//g, "/").replace(/^([A-Za-z][A-Za-z0-9]*:\/\/[\w\.-]+)\:(80)?\//g, "$1/").replace(/([^:/])\/+\//g, "$1/");
 
 				let DOUBLE_DOT_RE = /\/[^/]+\/\.\.\//;
-				while (value.match(DOUBLE_DOT_RE)) value = value.replace(DOUBLE_DOT_RE, "/");
+				while (data.match(DOUBLE_DOT_RE)) data = data.replace(DOUBLE_DOT_RE, "/");
 			}
 
-			return value;
+			return data;
 		},
 		/**
-		 * 转换Bin 字符串转bin数组
+		 * Any to unit8array
 		 *
-		 * @param {string} value 非string类型强制转换成string处理
-		 * @param {boolean|number|object} [opt] 参数
-		 *    @param {string} [opt.encoding=ansi] 输出编码方式
-		 *    @param {boolean} [opt.buf=false] 是否输出为ArrayBuffer
-		 *    @param {boolean} [opt.str=false] 是否输出为字符串，与buf参数互斥
-		 *    @param {number} [opt.len=1] 数据补足位数，str=true时生效
+		 * @WARN: if type not string, conver string oper
+		 *
+		 * @param {string} value
+		 * @param {boolean|number|object} [opt]
+		 *    @param {string} [opt.encoding=ansi] <output encoding mode>
+		 *    @param {boolean} [opt.buf=false] <is output arraybuffer>
+		 *    @param {boolean} [opt.str=false] <is output string>
+		 *    @param {number} [opt.len=1] <only str = true>
 		 * @returns {Array|Uint8Array}
 		 */
-		toHex:      (value, opt) => {
+		toHex (value, opt) {
 			let result = [],
 				be     = false,
 				func;
 
 			const toFill  = (value, len, be) => {
-					  be = be !== false;
-					  if (len > 1) {
-						  len = Math.ceil(value.length / len) * len;
-						  while (value.length < len) value[be ? "unshift" : "push"](0);
-					  }
+				be = be !== false;
 
-					  return value;
-				  },
-				  toArray = (value, len) => {
-					  if (len <= 1) return value;
+				if (len > 1) {
+					len = Math.ceil(value.length / len) * len;
 
-					  let r = [];
-					  for (let i = 0, j, l; i < value.length;) {
-						  j = len;
-						  l = r.push(0);
-						  l--;
-						  do {
-							  if (r[l]) r[l] <<= 8;
-							  r[l] |= value[i++];
-						  }
-						  while (--j && i < value.length);
-					  }
-					  return r;
-				  },
-				  toBasic = (value, r, i) => {
-					  value = value.charCodeAt(i++);
+					while (value.length < len) {
+						if (be) value.unshift(0);
+						else value.push(0);
+					}
+				}
 
-					  let l = [];
+				return value;
+			};
+			const toArray = (value, len) => {
+				if (len <= 1) return value;
 
-					  while (value) {
-						  l.unshift(value & 0xFF);
-						  value >>>= 8;
-					  }
+				let r = [];
 
-					  Array.prototype.push.apply(r, l);
+				for (let i = 0, j, l; i < value.length;) {
+					j = len;
+					l = r.push(0);
+					l -= 1;
 
-					  return i;
-				  },
-				  toUTF8  = (value, r, i) => {
-					  if (!r) r = [];
+					do {
+						if (r[l]) r[l] <<= 8;
+						r[l] |= value[i++];
 
-					  value = value.charCodeAt(i++);
+						j -= 1;
+					}
+					while (j && i < value.length);
+				}
 
-					  if (value < 0x80) r.push(value);
-					  else if (value < 0x800) {
-						  r.push(
-							  0xC0 | (value >>> 6),
-							  0x80 | (value & 0x3F)
-						  );
-					  }
-					  else if (value < 0x10000) {
-						  r.push(
-							  0xE0 | (value >>> 12),
-							  0x80 | ((value >>> 6) & 0x3F),
-							  0x80 | (value & 0x3F)
-						  )
-					  }
-					  else {
-						  r.push(
-							  0xF0 | (value >>> 18),
-							  0x80 | ((value >>> 12) & 0x3F),
-							  0x80 | ((value >>> 6) & 0x3F),
-							  0x80 | (value & 0x3F)
-						  );
-					  }
+				return r;
+			};
+			const toBasic = (value, r, i) => {
+				value = value.charCodeAt(i++);
 
-					  return i;
-				  },
-				  toUTF16 = (value, r, i, m) => {
-					  let c = [value.charCodeAt(i++), 0, 0, 0];
+				let l = [];
 
-					  m = m ? "push" : "unshift";
+				while (value) {
+					l.unshift(value & 0xFF);
+					value >>>= 8;
+				}
 
-					  c[3] = c[0] >> 4;
-					  if (c[3] < 0) return;
+				r.push(...l);
 
-					  switch (c[3]) {
-						  case 0x0E:
-							  c[1] = value.charCodeAt(i++);
-							  c[2] = value.charCodeAt(i++);
+				return i;
+			};
+			const toUTF8  = (value, r, i) => {
+				if (!r) r = [];
 
-							  r[m]((c[0] & 0x0F) << 12 | ((c[1] & 0x3F) << 6) | ((c[2] & 0x3F) << 0));
-							  break;
-						  case 0x0C:
-						  case 0x0D:
-							  c[1] = value.charCodeAt(i++);
+				value = value.charCodeAt(i++);
 
-							  r[m](((c[0] & 0x1F) << 6) | (c[1] & 0x3F));
-							  break;
-						  default:
-							  if (c[3] < 0) return;
-							  else if (c[3] < 8) r[m](c[0]);
-							  break;
-					  }
+				if (value < 0x80) r.push(value);
+				else if (value < 0x800) {
+					r.push(
+						0xC0 | (value >>> 6),
+						0x80 | (value & 0x3F)
+					);
+				}
+				else if (value < 0x10000) {
+					r.push(
+						0xE0 | (value >>> 12),
+						0x80 | ((value >>> 6) & 0x3F),
+						0x80 | (value & 0x3F)
+					);
+				}
+				else {
+					r.push(
+						0xF0 | (value >>> 18),
+						0x80 | ((value >>> 12) & 0x3F),
+						0x80 | ((value >>> 6) & 0x3F),
+						0x80 | (value & 0x3F)
+					);
+				}
 
-					  return i;
-				  },
-				  toUTF32 = (value, r, i, m) => {
-					  let l = [];
+				return i;
+			};
+			const toUTF16 = (value, r, i, m) => {
+				let c = [value.charCodeAt(i++), 0, 0, 0];
 
-					  i = toBasic(value, l, i);
-					  l = toFill(l, 4);
+				m = m ? "push" : "unshift";
 
-					  if (!m) l.reverse();
+				c[3] = c[0] >> 4;
+				if (c[3] < 0) return;
 
-					  Array.prototype.push.apply(r, l);
+				switch (c[3]) {
+					case 0x0E:
+						c[1] = value.charCodeAt(i++);
+						c[2] = value.charCodeAt(i++);
 
-					  return i;
-				  };
+						r[m]((c[0] & 0x0F) << 12 | ((c[1] & 0x3F) << 6) | ((c[2] & 0x3F) << 0));
+						break;
+					case 0x0C:
+					case 0x0D:
+						c[1] = value.charCodeAt(i++);
 
-			let encoding, len,
-				buf, str;
+						r[m](((c[0] & 0x1F) << 6) | (c[1] & 0x3F));
+						break;
+					default:
+						if (c[3] < 0) return;
+						else if (c[3] < 8) r[m](c[0]);
+						break;
+				}
+
+				return i;
+			};
+			const toUTF32 = (value, r, i, m) => {
+				let l = [];
+
+				i = toBasic(value, l, i);
+				l = toFill(l, 4);
+
+				if (!m) l.reverse();
+
+				r.push(...l);
+
+				return i;
+			};
+
+			let {
+					encoding = "ansi",
+					len      = 1,
+					buf      = false,
+					str      = false
+				} = opt;
 
 			switch (typeof (opt)) {
-				case "object":
-					if (opt) {
-						buf = opt.buf;
-						encoding = opt.encoding;
-						len = opt.len;
-						str = opt.str;
-					}
-					break;
 				case "boolean":
 					buf = opt;
 					break;
@@ -1080,13 +1185,15 @@ jShow.define(function (module, exports, require) {
 					len = opt;
 					break;
 			}
-			encoding = (encoding + "").toUpperCase();
-			buf = jShow.mode == jShow.MODE.Node && buf === true;
-			str = !buf && str === true;
-			if (!jShow.has(len, [1, 2, 4, 8])) len = 1;
 
-			value = String(value);
-			switch (encoding) {
+			if (!$.isString(encoding)) encoding = "ansi";
+			if (!$.has(len, [1, 2, 4, 8])) len = 1;
+			buf = ($.mode === $.MODE.Node) && (buf === true);
+			str = !buf && str === true;
+
+			let data = String(value);
+
+			switch (encoding.toUpperCase()) {
 				default:
 				case "ANSI":
 					func = toBasic;
@@ -1111,7 +1218,7 @@ jShow.define(function (module, exports, require) {
 					break;
 			}
 
-			for (let i = 0; i < value.length;) i = func(value, result, i, be);
+			for (let i = 0; i < data.length;) i = func(data, result, i, be);
 
 			if (buf) return Buffer.from(result);
 
@@ -1120,9 +1227,10 @@ jShow.define(function (module, exports, require) {
 			if (str) {
 				func = [];
 				len *= 2;
+
 				for (let i = 0, d; i < result.length; i++) {
 					d = result[i].toString(16).toUpperCase();
-					while (d.length < len) d = "0" + d;
+					while (d.length < len) d = `0${d}`;
 					func.push(d);
 				}
 
@@ -1134,4 +1242,4 @@ jShow.define(function (module, exports, require) {
 	};
 
 	return api;
-}, {module: module, exports: this}, ["String", "RegExp"], "Conver");
+}, module);

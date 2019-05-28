@@ -3,69 +3,61 @@
  * Name:           RegExp
  * Author:         jShow
  * CreTime:        2014-11-20
- * Description:    正则处理
+ * Description:    Regexp oper
  * Log
- * 2015-06-09    优化模块结构
+ * 2015-06-09    Optimize module structure
+ * 2019-05-25    Format Code to jShow Style Guide
  * ==========================================
  */
-jShow.define(function (module, exports, require) {
+define("RegExp", [], function (require, module) {
 	"use strict";
-	let api;
+
+	const $ = jShow;
 
 	/**
-	 * 正则处理扩展
-	 *
 	 * @namespace RegExp
 	 */
-	api = {
+	const api = {
 		/**
-		 * 正则敏感过滤
+		 * Regexp filter
 		 *
 		 * @param {string|Array} value
 		 * @param {object} [opt]
-		 *    @param {boolean} [opt.single=false] 是否作为单条处理
-		 *    @param {boolean} [opt.obj=true] 是否返回RegExp对象
-		 *    @param {string} [opt.type=g] RegExp对象类型
+		 *    @param {boolean} [opt.single=false] <is value of single>
+		 *    @param {boolean} [opt.obj=true] <is return regexp object>
+		 *    @param {string} [opt.type=g] <regexp mode>
 		 * @returns {string}
 		 */
-		Filter: (value, opt) => {
-			let result = "",
-				single, obj, type;
+		Filter (value, opt) {
+			let {
+					single = false,
+					obj    = true,
+					type   = "g"
+				} = opt;
 
 			switch (typeof(opt)) {
-				case "object":
-					if (opt) {
-						single = opt.single;
-						obj = opt.obj;
-						type = opt.type;
-					}
-					break;
 				case "boolean":
 					obj = opt;
 					break;
 				case "string":
 					type = opt;
-					obj = true;
+					obj  = true;
 					break;
 			}
-			single = single === true;
-			obj = obj !== false;
-			type = obj && jShow.has(type, ["g", "i"]) ? type : "g";
 
-			if (!jShow.isString(value)) single = false;
-			else {
-				result = value;
-				value = value.split("");
-			}
+			let data = value;
 
-			if (!single) {
-				result = "";
+			type = obj && $.has(type, ["g", "i"]) ? type : "g";
 
-				jShow.each(value, (d, i, s) => {
+			if (single !== true || $.isString(data)) {
+				data = data.split("");
+
+				data = data.map(d => {
 					switch (d) {
+						default:
+							return d;
 						case "\\":
-							s = "\\\\";
-							break;
+							return "\\\\";
 						case "(":
 						case ")":
 						case "{":
@@ -80,89 +72,90 @@ jShow.define(function (module, exports, require) {
 						case "^":
 						case "$":
 						case ".":
-							s = "\\" + value[i];
-							break;
-						default:
-							s = value[i];
+							return `\\${d}`;
 					}
-
-					result += i + 1 < value.length ? s + "|" : s;
-				}, {force: true});
+				}).join("|");
 			}
 
-			return obj ? new RegExp(result, type) : result;
+			return obj === true ? new RegExp(data, type) : data;
 		},
 		/**
-		 * 获取html中内容
+		 * Get real value of html
 		 *
 		 * @param {string} value
 		 * @param {string} [tag]
-		 *    @param tag=* 过滤全部标签，并去除所有不可见字符（空格除外）
-		 *    @param tag=title 获取标题
-		 *    @param tag=a|href 获取所有A标签
-		 *    @param tag=img|image 获取所有img标签
-		 *    @param tag=video 获取所有video标签
-		 *    @param tag=audio 获取所有audio标签
-		 *    @param tag=link|css|icon 获取所有link标签
-		 *    @param tag=script|js 获取所有脚本标签
+		 *    @param tag=* <filter all tag>
+		 *    @param tag=title <filter title tag>
+		 *    @param tag=a|href <filter a tag>
+		 *    @param tag=img|image <filter img tag>
+		 *    @param tag=video <filter video tag>
+		 *    @param tag=audio <filter audio tag>
+		 *    @param tag=link|css|icon <filter link tag>
+		 *    @param tag=script|js <filter script tag>
 		 * @returns {string|Array}
 		 */
-		Html:   (value, tag) => {
+		Html (value, tag) {
+			let data = String(value);
+
 			switch (String(tag)) {
 				default:
-					return String(value);
+					return data;
 				case "*":
-					return String(value).replace(/<[^>]+>/g, "").replace(/[\f\n\r\t\v]/g, "");
+					return data.replace(/<[^>]+>/g, "").replace(/[\f\n\r\t\v]/g, "");
 				case "title":
-					return this.Title(value);
+					return this.Title(data);
 				case "a":
 				case "href":
-					return this.Href(value);
+					return this.Href(data);
 				case "img":
 				case "image":
-					return this.Image(value);
+					return this.Image(data);
 				case "video":
-					return this.Video(value);
+					return this.Video(data);
 				case "audio":
-					return this.Audio(value);
+					return this.Audio(data);
 				case "link":
 				case "css":
-					return this.Link(value, "stylesheet");
+					return this.Link(data, "stylesheet");
 				case "icon":
-					return this.Link(value, "icon");
+					return this.Link(data, "icon");
 				case "script":
 				case "js":
-					return this.Script(value);
+					return this.Script(data);
 			}
 		},
 		/**
-		 * 获取html中标题
+		 * Get value in title tag
 		 *
 		 * @param {string} value
 		 * @returns {string}
 		 */
-		Title:  value => {
-			let result = /<title>([\S\s\t]*?)<\/title>/.exec(String(value));
+		Title (value) {
+			let data = /<title>([\S\s\t]*?)<\/title>/.exec(String(value));
 
-			return result != null ? result[1] : "";
+			return data != null ? data[1] : "";
 		},
 		/**
-		 * 获取html中的链接地址
+		 * Get value in a tag
 		 *
 		 * @param {string} value
-		 * @returns {Array} {value: 链接内容, href: 链接地址, title: 标签}
+		 * @returns {Array} {value: <href value>, href: <href url>, title: <tag>}
 		 */
-		Href:   value => {
-			let result = [],
-				rxp    = [
-					/<a([^>]*)>(.*?)<\/a>/g,
-					/href=(?:(?:'([^']+)')|(?:"([^"]+)"))/i,
-					/title=(?:(?:'([^']+)')|(?:"([^"]+)"))/i
-				],
-				val1, val2, val3;
+		Href (value) {
+			const rxp = [
+				/<a([^>]*)>(.*?)<\/a>/g,
+				/href=(?:(?:'([^']+)')|(?:"([^"]+)"))/i,
+				/title=(?:(?:'([^']+)')|(?:"([^"]+)"))/i
+			];
 
-			value = String(value);
-			while ((val1 = rxp[0].exec(value)) != null) {
+			let val1,
+				val2,
+				val3;
+
+			let data   = String(value);
+			let result = [];
+
+			while ((val1 = rxp[0].exec(data)) != null) {
 				val2 = val1[1].match(rxp[1]);
 				val3 = val1[1].match(rxp[2]);
 
@@ -176,22 +169,26 @@ jShow.define(function (module, exports, require) {
 			return result;
 		},
 		/**
-		 * 获取html中的图片地址
+		 * Get value in img tag
 		 *
 		 * @param {string} value
-		 * @returns {Array} {href: 链接地址, title: 标签}
+		 * @returns {Array} {href: <href url>, title: <tag>}
 		 */
-		Image:  value => {
-			let result = [],
-				rxp    = [
-					/<img([^>]*)>/g,
-					/href=(?:(?:'([^']+)')|(?:"([^"]+)"))/i,
-					/title=(?:(?:'([^']+)')|(?:"([^"]+)"))/i
-				],
-				val1, val2, val3;
+		Image (value) {
+			const rxp = [
+				/<img([^>]*)>/g,
+				/href=(?:(?:'([^']+)')|(?:"([^"]+)"))/i,
+				/title=(?:(?:'([^']+)')|(?:"([^"]+)"))/i
+			];
 
-			value = String(value);
-			while ((val1 = rxp[0].exec(value)) != null) {
+			let val1,
+				val2,
+				val3;
+
+			let data   = String(value);
+			let result = [];
+
+			while ((val1 = rxp[0].exec(data)) != null) {
 				val2 = val1[1].match(rxp[1]);
 				val3 = val1[1].match(rxp[2]);
 
@@ -204,23 +201,27 @@ jShow.define(function (module, exports, require) {
 			return result;
 		},
 		/**
-		 * 获取html中的视频地址
+		 * Get value in video tag
 		 *
 		 * @param {string} value
-		 * @returns {Array} {src: 链接地址, type: MIME类型}
+		 * @returns {Array} {src: <href url>, type: <MIME type>}
 		 */
-		Video:  value => {
-			let result = [],
-				rxp    = [
-					/<video([^>]*)>(.*?)<\/video>/g,
-					/<source([^>]*)>/i,
-					/src=(?:(?:'([^']+)')|(?:"([^"]+)"))/i,
-					/type=(?:(?:'([^']+)')|(?:"([^"]+)"))/i
-				],
-				val1, val2, val3;
+		Video (value) {
+			const rxp = [
+				/<video([^>]*)>(.*?)<\/video>/g,
+				/<source([^>]*)>/i,
+				/src=(?:(?:'([^']+)')|(?:"([^"]+)"))/i,
+				/type=(?:(?:'([^']+)')|(?:"([^"]+)"))/i
+			];
 
-			value = String(value);
-			while ((val1 = rxp[0].exec(value)) != null) {
+			let val1,
+				val2,
+				val3;
+
+			let data   = String(value);
+			let result = [];
+
+			while ((val1 = rxp[0].exec(data)) != null) {
 				if (val1[2].test(rxp[1])) val1 = rxp[1].exec(val1[2]);
 
 				val2 = val1[1].match(rxp[2]);
@@ -235,23 +236,27 @@ jShow.define(function (module, exports, require) {
 			return result;
 		},
 		/**
-		 * 获取html中的音频地址
+		 * Get value in audio tag
 		 *
 		 * @param {string} value
-		 * @returns {Array} {src: 链接地址, type: MIME类型}
+		 * @returns {Array} {src: <href url>, type: <MIME type>}
 		 */
-		Audio:  value => {
-			let result = [],
-				rxp    = [
-					/<audio([^>]*)>(.*?)<\/audio>/g,
-					/<source([^>]*)>/i,
-					/src=(?:(?:'([^']+)')|(?:"([^"]+)"))/i,
-					/type=(?:(?:'([^']+)')|(?:"([^"]+)"))/i
-				],
-				val1, val2, val3;
+		Audio (value) {
+			const rxp = [
+				/<audio([^>]*)>(.*?)<\/audio>/g,
+				/<source([^>]*)>/i,
+				/src=(?:(?:'([^']+)')|(?:"([^"]+)"))/i,
+				/type=(?:(?:'([^']+)')|(?:"([^"]+)"))/i
+			];
 
-			value = String(value);
-			while ((val1 = rxp[0].exec(value)) != null) {
+			let val1,
+				val2,
+				val3;
+
+			let data   = String(value);
+			let result = [];
+
+			while ((val1 = rxp[0].exec(data)) != null) {
 				if (val1[2].test(rxp[1])) val1 = rxp[1].exec(val1[2]);
 
 				val2 = val1[1].match(rxp[2]);
@@ -265,17 +270,30 @@ jShow.define(function (module, exports, require) {
 
 			return result;
 		},
-		Link:   (value, type) => {
-			let result = [],
-				rxp    = [
-					/<link([^>]*)>/g,
-					/href=(?:(?:'([^']+)')|(?:"([^"]+)"))/i,
-					/rel=(?:(?:'([^']+)')|(?:"([^"]+)"))/i
-				],
-				val1, val2, val3;
+		/**
+		 * Get value in link tag
+		 *
+		 * @param {string} value
+		 * @param {string} [type=*] <filter tag type>
+		 *     css  <.css/.scss/.sass file>
+		 *     icon <.ico file>
+		 * @returns {Array} {src: <href url>, type: <MIME type>}
+		 */
+		Link (value, type) {
+			const rxp = [
+				/<link([^>]*)>/g,
+				/href=(?:(?:'([^']+)')|(?:"([^"]+)"))/i,
+				/rel=(?:(?:'([^']+)')|(?:"([^"]+)"))/i
+			];
 
-			value = String(value);
-			while ((val1 = rxp[0].exec(value)) != null) {
+			let val1,
+				val2,
+				val3;
+
+			let data   = String(value);
+			let result = [];
+
+			while ((val1 = rxp[0].exec(data)) != null) {
 				val2 = val1[1].match(rxp[1]);
 				val3 = val1[1].match(rxp[2]);
 				val3 = val3 ? (val3[1] || val3[2]) : "";
@@ -284,37 +302,46 @@ jShow.define(function (module, exports, require) {
 
 				result.push({
 					url:  val2 ? (val2[1] || val2[2]) : "",
-					type: type,
+					type: type
 				});
 			}
 
 			return result;
 		},
-		CSS:    value => this.Link(value, "stylesheet"),
-		ICON:   value => this.Link(value, "icon"),
-		Script: value => {
-			let result = [],
-				rxp    = [
-					/<script([^>]*)>(.*?)<\/script>/g,
-					/src=(?:(?:'([^']+)')|(?:"([^"]+)"))/i,
-					/async(?:=(?:"async")|(?:('async')))?/i
-				],
-				val1, val2;
+		CSS (value) {
+			return this.Link(value, "stylesheet");
+		},
+		ICON (value) {
+			return this.Link(value, "icon");
+		},
+		Script (value) {
+			const rxp = [
+				/<script([^>]*)>(.*?)<\/script>/g,
+				/src=(?:(?:'([^']+)')|(?:"([^"]+)"))/i,
+				/async(?:=(?:"async")|(?:('async')))?/i
+			];
 
-			value = String(value);
-			while ((val1 = rxp[0].exec(value)) != null) {
+			let val1,
+				val2;
+
+			let data   = String(value);
+			let result = [];
+
+			while ((val1 = rxp[0].exec(data)) != null) {
 				val2 = val1[1].match(rxp[1]);
 
 				result.push({
 					url:   val2 ? (val2[1] || val2[2]) : "",
-					async: rxp[2].test(val1[1]),
+					async: rxp[2].test(val1[1])
 				});
 			}
 
 			return result;
 		},
-		JS:     value => this.Script(value)
+		JS (value) {
+			return this.Script(value);
+		}
 	};
 
 	return api;
-}, {module: module, exports: this}, [], "RegExp");
+}, module);

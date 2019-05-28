@@ -2,92 +2,119 @@
 (function (global, factory) {
 	if (global.jShow) return;
 
-	factory.call(
-		{ver: "1.0.2"},
-		global,
-		{
-			Node:       0,
-			Web:        0xff,
-			WebDesktop: 0x0f,
-			WebMac:     0x08,
-			WebMobile:  0xf0,
-			WebiPhone:  0x10,
-			WebiPad:    0x20,
-			WebAndroid: 0xc0,
-			WebAPhone:  0x40,
-			WebAPad:    0x80
-		});
+	const MODE = {
+		Node:       0,
+		Web:        0xff,
+		WebDesktop: 0x0f,
+		WebMac:     0x08,
+		WebMobile:  0xf0,
+		WebiPhone:  0x10,
+		WebiPad:    0x20,
+		WebAndroid: 0xc0,
+		WebAPhone:  0x40,
+		WebAPad:    0x80
+	};
+
+	const jShow = {
+		ver: "1.0.5",
+		...(factory.call(global, MODE))
+	};
+
+	global.jShow = jShow;
+
+	if (jShow.mode === MODE.Node) module.exports = jShow;
 })(typeof (window) !== "undefined" ? window : global, function (global, MODE) {
-	const $ = this;
+	let jShow = {};
 
 	if (!global.navigator) global.navigator = {userAgent: ""};
 
-	global.jShow = $;
-	$.MODE = MODE;
-	$.mode = MODE.Node;
+	jShow.MODE = MODE;
+	jShow.mode = MODE.Node;
 
 	/**
-	 * 环境判断
+	 * Get Javascript Env Version
 	 *
-	 * @param {string} [na=undefined] 版本字符串
+	 * @param {string} [na=undefined] <version object>
 	 * @returns {object}
-	 *    @return {number} mode 模式，对应MODE码表
-	 *    @return {string} kernel 内核名称
-	 *    @return {string} version 内核版本
+	 *    @return {number} mode <value from MODE object>
+	 *    @return {string} kernel <kernel name>
+	 *    @return {string} version <kernel version>
 	 */
-	$.version = na => {
-		let r = {mode: MODE.Node, kernel: "node", version: ""};
+	jShow.version = function parseKernelVersion (na = navigator.userAgent) {
+		let nav     = na;
+		let mode    = MODE.Node;
+		let kernel  = "node";
+		let version = "";
 
-		if (!na && typeof(window) == "undefined" && process) {
-			r.kernel = "node";
-			r.version = process.versions.node;
+		try {
+			if (!nav && (window === void 0) && process) {
+				version = process.versions.node;
+				return;
+			}
+
+			(nav => {
+				let val = null;
+
+				val = nav.match(/msie ([\d.]+)/);
+				if (val && val.length > 1) {
+					kernel  = "msie";
+					version = val[1];
+					return;
+				}
+
+				val = nav.match(/firefox\/([\d.]+)/);
+				if (val && val.length > 1) {
+					kernel  = "firefox";
+					version = val[1];
+					return;
+				}
+
+				val = nav.match(/chrome\/([\d.]+)/);
+				if (val && val.length > 1) {
+					kernel  = "chrome";
+					version = val[1];
+					return;
+				}
+
+				val = nav.match(/opera.([\d.]+)/);
+				if (val && val.length > 1) {
+					kernel  = "opera";
+					version = val[1];
+					return;
+				}
+
+				val = nav.match(/version\/([\d.]+).*safari/);
+				if (val && val.length > 1) {
+					kernel  = "safari";
+					version = val[1];
+					return;
+				}
+
+				kernel  = "other";
+				version = "0";
+			})(nav.toLowerCase());
+
+			mode = (nav => {
+				if (nav.indexOf("Android") > -1 || nav.indexOf("Linux") > -1) return MODE.WebAndroid;
+
+				if (nav.indexOf("iPhone") > -1) return MODE.WebiPhone;
+
+				if (nav.indexOf("iPad") > -1) return MODE.WebiPad;
+
+				if (nav.match(/\(i[^;]+;( U;)? CPU.+Mac OS/)) return MODE.WebMac;
+
+				return MODE.WebDesktop;
+			})(nav);
 		}
-		else {
-			na = typeof(na) == "string" && na ? na : navigator.userAgent;
-
-			let s = na.toLowerCase(),
-				t;
-
-			if (t = s.match(/msie ([\d.]+)/)) {
-				r.kernel = "ie";
-				r.version = t[1];
-			}
-			else if (t = s.match(/firefox\/([\d.]+)/)) {
-				r.kernel = "firefox";
-				r.version = t[1];
-			}
-			else if (t = s.match(/chrome\/([\d.]+)/)) {
-				r.kernel = "chrome";
-				r.version = t[1];
-			}
-			else if (t = s.match(/opera.([\d.]+)/)) {
-				r.kernel = "opera";
-				r.version = t[1];
-			}
-			else if (t = s.match(/version\/([\d.]+).*safari/)) {
-				r.kernel = "safari";
-				r.version = t[1];
-
-			}
-			else {
-				r.kernel = "other";
-				r.version = "0";
-			}
-
-			if (na.indexOf("Android") > -1 || na.indexOf("Linux") > -1) r.mode = MODE.WebAndroid;
-			else if (na.indexOf("iPhone") > -1) r.mode = MODE.WebiPhone;
-			else if (na.indexOf("iPad") > -1) r.mode = MODE.WebiPad;
-			else if (na.match(/\(i[^;]+;( U;)? CPU.+Mac OS/)) r.mode = MODE.WebMac;
-			else r.mode = MODE.WebDesktop;
+		finally {
+			return {mode, kernel, version};
 		}
-
-		return r;
 	};
-	$.mode = $.version().mode;
-	if ($.mode == MODE.Node) exports = module.exports = $;
-	else if (!global.global) global.global = global;
+	jShow.mode = jShow.version().mode;
 
-/**
+	if (jShow.mode !== MODE.Node && !global.global) global.global = global;
+
+	/**
  * ==========================================
  * Name:           jShow's Basic Function
  * Author:         j-show
@@ -95,787 +122,961 @@
  * Description:    Basic Function Library
  * Log:
  * 2019-02-14    Init Library
+ * 2019-05-19    Format Code to jShow Style Guide
  * ==========================================
  */
-($ => {
-	/**
-	 * 对象类型识别
-	 *
-	 * @method type
-	 * @param {object} obj 检测对象
-	 * @param {boolean} [detail=false] 是否深度识别
-	 * @returns {string}
-	 *        True:    boolean, number, string, function, null
-	 *        False:    boolean, number, string, function, undefined, null, object, arguments, array, date, regexp
-	 */
-	$.type = (obj, detail) => {
-		detail = detail === true;
+(owner => {
+	const $ = global.jShow;
 
-		let type = typeof obj,
-			rxp  = v => (/^\[object (.*)\]$/.exec(Object.prototype.toString.call(v))[1]).toLowerCase();
+	const api = {
+		/**
+		 * Any type parse, return type string
+		 *
+		 * @param {object} value <target>
+		 * @param {boolean} [detail=false] <is parse detail>
+		 * @returns {string}
+		 *        True:    boolean, number, string, function, null
+		 *        False:    boolean, number, string, function, undefined, null, object, arguments, array, date, regexp
+		 */
+		type (value, detail = false) {
+			const opt  = detail === true;
+			const type = typeof value;
+			const rxp  = v => (/^\[object (.*)\]$/.exec(Object.prototype.toString.call(v))[1]).toLowerCase();
 
-		switch (type) {
-			default:
-			case "undefined":
-				return detail ? "undefined" : "null";
-			case "boolean":
-			case "number":
-			case "string":
-				return type;
-			case "function":
-				return detail ? "function" : rxp(obj);
-			case "object":
-				if (obj === null) return "null";
-				if (!detail) return "object";
-				if (obj.jquery) return "jquery";
+			switch (type) {
+				default:
+				case "undefined":
+					return opt ? "undefined" : "null";
+				case "boolean":
+				case "number":
+				case "string":
+					return type;
+				case "function":
+					return opt ? "function" : rxp(value);
+				case "object": {
+					if (value === null) return "null";
+					if (!opt) return "object";
+					if (value.jquery) return "jquery";
 
-				if (obj instanceof Array) return "array";
-				if (obj instanceof RegExp) return "regexp";
+					if (value instanceof Array) return "array";
+					if (value instanceof RegExp) return "regexp";
 
-				type = rxp(obj);
+					let val = rxp(value);
 
-				if (type.indexOf("html") == 0) return "dom";
+					if (val.indexOf("html") === 0) return "dom";
 
-				return type;
-		}
-	};
-	/**
-	 * 是否相等
-	 *
-	 * @param {*} a 判断值
-	 * @param {*} b 判断值
-	 * @param {boolean} [abs=true] 判断引用是否相等
-	 * @returns {boolean}
-	 */
-	$.is = (a, b, abs) => {
-		if (abs !== false) return Object.is(a, b);
-		else {
-			let type = [$.type(a, true), $.type(b, true)];
+					return val;
+				}
+			}
+		},
+		/**
+		 * Between Judge, a and b
+		 *
+		 * @WANR: this function no safe
+		 * @FIX: pls change this
+		 *
+		 * @param {number} value
+		 * @param {number} a
+		 * @param {number} b
+		 * @returns {boolean}
+		 */
+		between (value, a, b) {
+			const isNumber = $.isNumber;
 
-			if (type[0] != type[1]) return false;
+			if (!isNumber(value, {int: false})) return false;
+			if (isNumber(a, {int: false}) && value < a) return false;
+			if (isNumber(b, {int: false}) && value > b) return false;
+
+			return true;
+		},
+		/**
+		 * Get callback function from array/arguments
+		 *
+		 * @param {Array|arguments} value <target>
+		 * @param {object|number} opt <option>
+		 *    @param {number} [opt.index=0] <start position>
+		 *    @param {boolean} [opt.loop=true] <is loop check>
+		 *    @param {boolean|string} [opt.type=async] <change function type is (normal,async,generator)>
+		 * @returns {function/null}
+		 */
+		callback (value, opt = 0) {
+			const list = [...value];
+
+			if (list.length < 1) return null;
+
+			let {
+					index = 0,
+					loop  = true,
+					type  = "async"
+				} = opt;
+
+			switch (typeof(opt)) {
+				case "boolean":
+					loop = opt;
+					break;
+				case "number":
+					index = opt;
+					break;
+			}
+
+			loop = loop === true;
+
+			if (!$.isNumber(index)) index = 0;
+			if (index < 0) index += list.length;
+
+			if (index < 0 || index >= list.length) return null;
+
+			for (let i = list.length - 1, func = $.isFunction; i > 0; i--) {
+				if (func(list[i], type)) return list[i];
+				if (!loop) break;
+			}
+
+			return null;
+		},
+		/**
+		 * Any each
+		 *
+		 * @param {Array|object|string|set|map} value <target>
+		 * @param {function} callback
+		 * @param {boolean|number|object} opt <option>
+		 *    @param {boolean} [opt.detail=false] <is get value detail>
+		 *    @param {boolean} [opt.force=false] <is force of array type>
+		 *    @param {boolean} [opt.index=0] <start position, only type=array>
+		 *    @param {boolean} [opt.desc=false] <is desc sort, only trype=array>
+		 * @returns {boolean}
+		 */
+		each (value, callback, opt = false) {
+			if (!value || !$.isFunction(callback, "async")) return false;
+
+			let {
+					detail = false,
+					force  = false,
+					index  = 0,
+					desc   = false
+				} = opt;
+
+			switch (typeof(opt)) {
+				case "boolean":
+					detail = opt;
+					break;
+				case "number":
+					index = opt;
+					break;
+			}
+
+			detail = detail === true;
+			force  = force === true;
+			desc   = desc === true;
+
+			let list = value;
+			let type = $.type(list, true);
+
+			switch (type) {
+				case "string":
+				case "set":
+				case "arguments":
+					list = [...list];
+					type = "array";
+					break;
+				case "map":
+					list = {};
+
+					for (let [k, v] of value) list[k] = v;
+
+					type = "object";
+					break;
+			}
+
+			if (force) type = "array";
+
+			switch (type) {
+				default:
+					return false;
+				case "array": {
+					type = $.type;
+
+					if (!$.isNumber(index)) index = 0;
+					if (index < 0) index += list.length;
+
+					if (index < 0) return false;
+
+					let n = desc ? -1 : 1;
+					let i = (desc ? list.length - 1 : 0) + index * n;
+					let l = desc ? 1 : list.length * -1;
+
+					if (i < 0 || i >= list.length) l = i * -1;
+
+					for (let d; i + l; i += n) {
+						d = list[i];
+						d = callback.call(value, d, i, (detail ? type(d, true) : list), value);
+						if (d === false) return false;
+					}
+
+					break;
+				}
+				case "object":
+				case "function": {
+					type = $.type;
+
+					let d;
+
+					for (let k in list) {
+						d = list[k];
+						d = callback.call(value, d, k, (detail ? type(d, true) : list), value);
+						if (d === false) return false;
+					}
+
+					break;
+				}
+			}
+
+			return true;
+		},
+		/**
+		 * Unique function
+		 *
+		 * @param {Array|set|map} value <src object>
+		 * @param {boolean} [write=false] <is change src object>
+		 * @returns {Array}
+		 */
+		unique (value, write = false) {
+			if (!$.isArray(value, true)) return [];
+
+			const opt    = write === true;
+			const result = [];
+			const len    = value.length;
+
+			for (let i = 0, d; i < len; i++) {
+				d = value[i];
+
+				if (result.indexOf(d) > -1) continue;
+
+				result.push(d);
+				if (opt) value.push(d);
+			}
+
+			if (opt) value.splice(0, len);
+
+			return result;
+		},
+		/**
+		 * Exist judge value in list
+		 *
+		 * @param {*} value <target>
+		 * @param {Array|object|set|map} list <check list>
+		 * @param {function} callback
+		 * @returns {boolean}
+		 */
+		has (value, list, callback) {
+			let result = false;
+
+			if (!$.isFunction(callback)) callback = null;
+
+			switch ($.type(list, true)) {
+				default:
+					return false;
+				case "set":
+				case "map":
+					return list.has(value);
+				case "array":
+				case "arguments":
+				case "object":
+				case "string":
+					return $.each(list, (d, k) => {
+						if (!Object.is(value, d)) return;
+						if (callback && callback(k) === true) return;
+
+						return false;
+					});
+			}
+
+			return result;
+		},
+		/**
+		 * Deep copy
+		 *
+		 * @param {*} src
+		 * @param {*} dest
+		 * @param {boolean|object} opt <option, when opt=boolean like change opt.deep>
+		 *    @param {boolean} [opt.deep=false] <is deep copy>
+		 *    @param {boolean} [opt.write=true] <is change src>
+		 * @param {function} callback
+		 * @returns {*}
+		 */
+		clone (src, dest = null, opt = false, callback = null) {
+			let stype   = $.type(src, true);
+			let dtype   = $.type(dest, true);
+			let dsimple = $.isSimple(dest);
+
+			if (!(stype in ["array", "object", "function", "set", "map"])) return src;
+			if (!dsimple && stype !== dtype) return dest;
+
+			let {
+					deep  = false,
+					write = true
+				} = opt;
+
+			if ($.isBool(opt)) deep = opt;
+
+			deep  = deep === true;
+			write = write === true;
+
+			let result = dest;
+
+			if (dsimple) {
+				switch (stype) {
+					default:
+						result = {};
+						break;
+					case "set":
+						result = new Set();
+						break;
+					case "map":
+						result = new Map();
+						break;
+					case "function":
+						result = src;
+						break;
+					case "array":
+						result = [];
+						break;
+				}
+			}
+			else {
+				if (!write) result = $.clone(result, null, true);
+			}
+
+			((src, dest, deep, callback) => {
+				const cbset   = (dest, key, data, type, odata) => {
+					return callback ? callback.call(dest, key, data, type, odata) : data;
+				};
+				const upset   = (mode, obj, key, data, type) => {
+					let result;
+
+					switch (mode) {
+						case "array":
+							if (obj.length <= key) obj.push(void(0));
+						default:
+							result   = cbset(obj, key, data, type, obj[key]);
+							obj[key] = result;
+							break;
+						case "set":
+							result = data;
+							obj.add(result);
+							break;
+						case "map":
+							if (!obj.has(key)) obj.set(key, void(0));
+
+							result = cbset(obj, key, data, type, obj.get(key));
+							obj.set(key, result);
+							break;
+					}
+
+					return result;
+				};
+				const deepset = (state, src, dest, key) => {
+					if (!state) return;
+
+					$.clone(src, dest, true, (k, d, t, old) => cbset(dest, `${key}.${k}`, d, t, old));
+				};
+
+				let data,
+					type,
+					state,
+					value;
+
+				$.each(src, (d, k, t) => {
+					if (Object.is(src, d)) return;
+
+					if (deep) {
+						data  = d;
+						type  = t;
+						state = false;
+
+						switch (t) {
+							case "object":
+								data  = {};
+								state = true;
+								break;
+							case "arguments":
+								type = "array";
+							case "array":
+								data  = [];
+								state = d.length > 0;
+								break;
+							case "set":
+								data  = new Set();
+								state = d.size > 0;
+								break;
+							case "map":
+								data  = new Map();
+								state = d.size > 0;
+								break;
+						}
+
+						value = upset(stype, dest, k, data, type);
+						deepset(state, d, value, k);
+					}
+					else {
+						upset(stype, dest, k, d, t);
+					}
+				}, true);
+			})(src, result, deep, ($.isFunction(callback) ? callback : null));
+
+			return result;
+		},
+		/**
+		 * Same judge
+		 *
+		 * @param {*} a
+		 * @param {*} b
+		 * @param {boolean} [abs=true] <is absolute check>
+		 * @returns {boolean}
+		 */
+		is (a, b, abs = true) {
+			if (abs === true) return Object.is(a, b);
+
+			let type = [
+				$.type(a, true),
+				$.type(b, true)
+			];
+
+			if (type[0] !== type[1]) return false;
 
 			switch (type[0]) {
 				default:
 					return Object.is(a, b);
 				case "function":
-					return a.toString() == b.toString();
+					return a.toString() === b.toString();
 				case "date":
-					return a.getTime() == b.getTime();
+					return a.getTime() === b.getTime();
 				case "array":
 				case "arguments":
 				case "object":
-					if (Object.keys(a).length != Object.keys(b).length) return false;
+					if (Object.keys(a).length !== Object.keys(b).length) return false;
 
-					for (let k in a) if (!Object.is(a[k], b[k])) return false;
+					for (let k in a) {
+						if (!Object.is(a[k], b[k])) return false;
+					}
 
 					return true;
 			}
-		}
-	};
-	/**
-	 * 是否是简单类型
-	 *
-	 * @param value
-	 * @returns {boolean}
-	 */
-	$.isSimple = value => {
-		switch (typeof(value)) {
-			default:
-				return value === null;
-			case "undefined":
-			case "boolean":
-			case "number":
-			case "string":
-				return true;
-		}
-	};
-	/**
-	 * 是否为Null
-	 *
-	 * @param {*} value 判断值
-	 * @param {boolean|object} opt 参数
-	 *    @param {boolean} [opt.udf=true] undefined是否为null
-	 *    @param {boolean} [opt.obj=false] 数组/对象为空是否为null
-	 * @returns {boolean}
-	 */
-	$.isNull = (value, opt) => {
-		let udf, obj;
-
-		switch (typeof(opt)) {
-			case "object":
-				if (opt) {
-					udf = opt.udf;
-					obj = opt.obj;
-				}
-				break;
-			case "boolean":
-				udf = opt;
-				break;
-		}
-		udf = udf !== false;
-		obj = obj === true;
-
-		switch (typeof(value)) {
-			default:
-				return false;
-			case "undefined":
-				return udf;
-			case "object":
-				if (value === null) return true;
-				if (!obj) return false;
-				return Object.keys(value).length == 0;
-		}
-	};
-	/**
-	 * 是否为Boolean
-	 *
-	 * @param {*} value 判断值
-	 * @param {boolean} [str=false] 是否判断字符串
-	 * @returns {boolean}
-	 */
-	$.isBool = (value, str) => {
-		return (typeof(value) == "boolean") || (str === true ? (String(value) in {
-			"true":  1,
-			"false": 1
-		}) : false);
-	};
-	/**
-	 * 是否为Number
-	 *
-	 * @param {*} value 判断值
-	 * @param {boolean|object} opt 参数
-	 *    @param {boolean} [opt.nan=false] NaN是否为数字
-	 *    @param {boolean} [opt.str=false] 是否识别字符串
-	 *    @param {boolean} [opt.int=true] 是否只识别整数
-	 *    @param {number} [opt.min=NaN] 最小值
-	 *    @param {number} [opt.max=NaN] 最大值
-	 * @returns {boolean}
-	 */
-	$.isNumber = (value, opt) => {
-		let nan, str, int, min, max, func;
-
-		switch (typeof(opt)) {
-			case "object":
-				if (opt) {
-					nan = opt.nan;
-					str = opt.str;
-					int = opt.int;
-					min = opt.min;
-					max = opt.max;
-				}
-				break;
-			case "boolean":
-				nan = opt;
-				break;
-		}
-		min = Number(min);
-		max = Number(max);
-		nan = nan === true;
-		str = str === true;
-		if (int = int !== false) {
-			if (!isNaN(min)) min = parseInt(min);
-			if (!isNaN(max)) max = parseInt(max);
-			func = v => {
-				if (parseInt(v) !== v) return false;
-				if (!isNaN(min) && v < min) return false;
-				if (!isNaN(max) && v > max) return false;
-				return true;
+		},
+		/**
+		 * Type judge: simple
+		 *
+		 * @param {*} value
+		 * @returns {boolean}
+		 */
+		isSimple (value) {
+			switch (typeof(value)) {
+				default:
+					return value === null;
+				case "undefined":
+				case "boolean":
+				case "number":
+				case "string":
+					return true;
 			}
-		}
-		else {
-			func = (v, b) => {
-				if (!b) return false;
-				if (!isNaN(min) && v < min) return false;
-				if (!isNaN(max) && v > max) return false;
-				return true;
-			};
-		}
+		},
+		/**
+		 * Type judge: null
+		 *
+		 * @param {*} value <target>
+		 * @param {boolean|object} opt <option>
+		 *    @param {boolean} [opt.udf=true] <undefined of null>
+		 *    @param {boolean} [opt.obj=false] <array/object is empty of null>
+		 * @returns {boolean}
+		 */
+		isNull (value, opt = true) {
+			let {
+					udf = true,
+					obj = false
+				} = opt;
 
-		switch (typeof(value)) {
-			case "number":
-				return func(value, nan ? true : !isNaN(value));
-			case "string":
-				return str && value ? $.isNumber(Number(value), {nan: nan, int: int}) : false;
-			default:
-				return false;
-		}
-	};
-	/**
-	 * 是否为String
-	 *
-	 * @param {*} value 判断值
-	 * @param {boolean} [empty=false] 空值是否为字符串
-	 * @returns {boolean}
-	 */
-	$.isString = (value, empty) => {
-		return (typeof(value) == "string") && (empty === true ? true : value.length > 0);
-	};
-	/**
-	 * 是否为函数
-	 *
-	 * @param {*} value 判断值
-	 * @param {string|boolean} type 类型限定
-	 * @returns {boolean}
-	 */
-	$.isFunction = (value, type) => {
-		switch ($.type(value, true)) {
-			default:
-				return false;
-			case "function":
-				return true;
-			case "asyncfunction":
-				return (type === "async") || (type !== true);
-			case "generatorfunction":
-				return (type === "generator") || (type !== true);
-		}
-	};
-	/**
-	 * 是否为数组
-	 *
-	 * @param {*} value 判断值
-	 * @param {boolean} [arg=false] arguments是否为数组
-	 * @returns {boolean}
-	 */
-	$.isArray = (value, arg) => {
-		switch ($.type(value, true)) {
-			case "array":
-				return true;
-			case "arguments":
-				return arg === true ? arg : false;
-			default:
-				return false;
-		}
-	};
-	/**
-	 * 是否为对象
-	 *
-	 * @param {*} value 判断值
-	 * @param {string|boolean} [arg=object] 只识别Object
-	 * @returns {boolean}
-	 */
-	$.isObject = (value, arg) => {
-		let result = typeof(value) == "object";
+			if ($.isBool(opt, false)) udf = opt;
 
-		switch (arg) {
-			case false:
-				return result && (value !== null);
-			default:
-				return result && (value ? (value.constructor == Object) : false);
-			case true:
-			case "any":
-				return result;
-		}
-	};
-	/**
-	 * 是否为Promise
-	 *
-	 * @param {*} value 判断值
-	 * @returns {boolean}
-	 */
-	$.isPromise = value => $.type(value, true) === "promise";
-	/**
-	 * 是否为Generator
-	 *
-	 * @param {*} value 判断值
-	 * @param {boolean} [obj=false] 是否检测对象
-	 * @returns {boolean}
-	 */
-	$.isGenerator = (value, obj) => {
-		const isFunc = $.isFunction,
-			  isObj  = obj => isFunc(obj.next) && isFunc(obj.throw);
+			udf = udf === true;
+			obj = obj === true;
 
-		if (!value) return false;
-		if (!isFunc(value, "generatorfunction")) return obj === true ? isObj(value) : false;
+			switch (typeof(value)) {
+				default:
+					return false;
+				case "undefined":
+					return udf;
+				case "object":
+					if (value === null) return true;
+					if (!obj) return false;
 
-		let main = value.constructor;
+					return Object.keys(value).length < 1;
+			}
+		},
+		/**
+		 * Type judge: boolean
+		 *
+		 * @param {*} value <target>
+		 * @param {boolean} [str=false] <is parse string>
+		 * @returns {boolean}
+		 */
+		isBool (value, str = false) {
+			switch (typeof(value)) {
+				default:
+					return false;
+				case "boolean":
+					return true;
+				case "string":
+					if (str !== true) return false;
 
-		if (main.name == "GeneratorFunction" || main.displayName == "GeneratorFunction") return true;
+					return ({"true": true, "false": true})[value];
+			}
+		},
+		/**
+		 * Type judge: number
+		 *
+		 * @param {*} value <target>
+		 * @param {boolean|object} opt <option>
+		 *    @param {boolean} [opt.nan=false] <NaN of number>
+		 *    @param {boolean} [opt.str=false] <is parse string>
+		 *    @param {boolean} [opt.int=true] <is only parse integer>
+		 *    @param {number} [opt.min=NaN] <min number allow by value>
+		 *    @param {number} [opt.max=NaN] <max number allow by value>
+		 * @returns {boolean}
+		 */
+		isNumber (value, opt = false) {
+			let {
+					nan = false,
+					str = false,
+					int = true,
+					min = NaN,
+					max = NaN
+				} = opt;
 
-		return isObj(main.prototype);
-	};
-	/**
-	 * 是否为JSON
-	 *
-	 * @param {*} value 判断值
-	 * @param {object} [out=null] out为状态机参数
-	 * @param {function} [callback]
-	 * @returns {boolean}
-	 */
-	$.isJSON = (value, out, callback) => {
-		if (typeof(value) != "string" || value.length < 2) return false;
+			if ($.isBool(opt)) nan = opt;
 
-		let data   = (o, v) => {
-				o.type = v[0];
-				o.escape = v[1];
-				o.index = v[2];
+			min = Number(min);
+			max = Number(max);
+			nan = nan === true;
+			str = str === true;
+			int = int === true;
 
-				return o;
-			},
-			result = (o, v) => {
+			switch (typeof(value)) {
+				default:
+					return false;
+				case "number":
+					if (!nan && isNaN(value)) return false;
+
+					if (int) {
+						if (parseInt(value) !== value) return false;
+
+						if (!isNaN(min)) min = parseInt(min);
+						if (!isNaN(max)) max = parseInt(max);
+					}
+
+					if (!isNaN(min) && value < min) return false;
+					if (!isNaN(max) && value > max) return false;
+
+					return true;
+				case "string":
+					if (!str) return false;
+
+					return $.isNumber(Number(value), {nan, int, min, max});
+			}
+		},
+		/**
+		 * Type judge: string
+		 *
+		 * @param {*} value <target>
+		 * @param {object|boolean|number} [opt=*] <option>
+		 *    @param {boolean} [opt.empty=false] <value is empty of string>
+		 *    @param {number} [opt.min=NaN] <min number allow by value>
+		 *    @param {number} [opt.max=NaN] <max number allow by value>
+		 * @returns {boolean}
+		 */
+		isString (value, opt = false) {
+			if (typeof (value) !== "string") return false;
+
+			let {
+					empty = false,
+					min   = NaN,
+					max   = NaN
+				} = opt;
+
+			switch (typeof(opt)) {
+				case "boolean":
+					empty = opt;
+					break;
+				case "number":
+					min = opt;
+					break;
+			}
+
+			min   = Number(min);
+			max   = Number(max);
+			empty = empty === true;
+
+			if (empty) {
+				min = 0;
+				max = 0;
+			}
+
+			let len = value.length;
+
+			if (!isNaN(min) && len < min) return false;
+			if (!isNaN(max) && len > max) return false;
+
+			return true;
+		},
+		/**
+		 * Type judge: function
+		 *
+		 * @param {*} value 判断值
+		 * @param {string|boolean} [type=false] <function type, allow normal/async/generator>
+		 *     true <all function type>
+		 *     false <only normal type>
+		 *     async <normal/async type>
+		 *     generator <noarmal/generator type>
+		 * @returns {boolean}
+		 */
+		isFunction (value, type = true) {
+			switch ($.type(value, true)) {
+				default:
+					return false;
+				case "function":
+					return true;
+				case "asyncfunction":
+					return (type !== true) || (type === "async") || (type === "all");
+				case "generatorfunction":
+					return (type !== true) || (type === "generator") || (type === "all");
+			}
+		},
+		/**
+		 * Type judge: array
+		 *
+		 * @param {*} value <target>
+		 * @param {object|boolean} opt <option>
+		 *    @param {boolean} [opt.empty=false] <value is empty of array>
+		 *    @param {boolean} [opt.arg=false] <value is arguments of array>
+		 *    @param {number} [opt.min=0] <min number allow by value.length>
+		 * @returns {boolean}
+		 */
+		isArray (value, opt = false) {
+			let {
+					empty = false,
+					arg   = false,
+					min   = NaN
+				} = opt;
+
+			switch (typeof (opt)) {
+				case "boolean":
+					arg = opt;
+					break;
+				case "number":
+					min = opt;
+					break;
+			}
+
+			min = Number(min);
+			if (empty === true) min = 0;
+
+			switch ($.type(value, true)) {
+				default:
+					return false;
+				case "array":
+					return !isNaN(min) || (value.length > min);
+				case "arguments":
+					return (arg === true) && (!isNaN(min) || (value.length > min));
+			}
+		},
+		/**
+		 * Type judge: object
+		 *
+		 * @WARN: only check object like json, this function no safe
+		 *
+		 * @param {*} value <target>
+		 * @param {string|boolean} [arg=object] <only parse object>
+		 * @returns {boolean}
+		 */
+		isObject (value, arg = "object") {
+			let result = typeof(value) === "object";
+
+			if (!result) return false;
+
+			switch (arg) {
+				default:
+					return value ? (value.constructor === Object) : false;
+				case false:
+					return value !== null;
+				case true:
+				case "any":
+					return true;
+			}
+		},
+		/**
+		 * Type judge: Promise object
+		 *
+		 * @param {*} value <target>
+		 * @returns {boolean}
+		 */
+		isPromise (value) {
+			return $.type(value, true) === "promise";
+		},
+		/**
+		 * Type judge: Generator function
+		 *
+		 * @param {*} value <target>
+		 * @param {boolean} [obj=false] <is parse generator object>
+		 * @returns {boolean}
+		 */
+		isGenerator (value, obj = false) {
+			if (!value) return false;
+
+			const isFunc = $.isFunction;
+
+			if (isFunc(value, "generator")) return true;
+			if (obj !== true || !$.isObject(value, "ang")) return false;
+
+			return isFunc(value.next) && isFunc(value.throw);
+		},
+		/**
+		 * Type judge: JSON
+		 *
+		 * @param {*} value <target>
+		 * @param {function} [callback]
+		 * @param {object} [out=null] <status object>
+		 * @returns {boolean}
+		 */
+		isJSON (value, callback, out = {}) {
+			if (!$.isString(value, 2)) return false;
+
+			let {
+					type   = [],
+					escape = false,
+					index  = 0
+				} = out;
+
+			if (!$.isArray(type)) type = [];
+			escape = escape === true;
+			if (!$.isNumber(index)) index = 0;
+
+			const result = (o, v) => {
 				if (callback) callback(o, v);
 				return false;
-			},
-			type, escape;
+			};
 
-		if (callback === void(0)) callback = out;
+			if (!/^['"\[\{]/.test(value)) return result({type, escape, index: -1});
 
-		if (!out || typeof (out) != "object") out = {};
-		else {
-			type = out.type;
-			escape = out.escape;
-		}
-		if (!$.isFunction(callback)) callback = null;
-		if (!(type instanceof Array)) type = [];
-		escape = escape === true;
+			if (!$.isObject(out)) out = {};
 
-		let index = 0,
-			len   = type.length - 1,
-			str   = len >= 0 && type[len] == 1;
+			let len  = type.length - 1;
+			let str  = len > -1 && type[len] === 1;
+			let list = [...value];
 
-		if (!/^['"\[\{]/.test(value)) return result(data(out, [type, escape, -1]));
+			for (let i = 0, char; i < list.length; i++) {
+				if (escape) escape = false;
+				else {
+					char = char.codePointAt();
 
-		for (let char of value) {
-			if (escape) escape = false;
-			else {
-				switch (char = char.codePointAt()) {
-					case 92:
-						if (!str) return result(data({}, [type, escape, index]), out);
+					switch (char) {
+						case 92:
+							if (!str) return result({type, escape, index}, out);
 
-						escape = true;
-						break;
-					case 34:
-					case 39:
-						if (!str) {
-							str = true;
-							len = type.push(char) - 1;
-						}
-						else if (char == type[len]) {
-							type.pop();
-							len--;
-							str = false;
-						}
-						break;
-					case 91:
-					case 123:
-						if (!str) {
-							len = type.push(char + 2) - 1;
-						}
-						break;
-					case 93:
-					case 125:
-						if (!str) {
-							if (char != type[len]) return result(data({}, [type, escape, index]), out);
+							escape = true;
+							break;
+						case 34:
+						case 39:
+							if (!str) {
+								str = true;
+								len = type.push(char) - 1;
+							}
+							else if (char === type[len]) {
+								type.pop();
+								len -= 1;
+								str = false;
+							}
+							break;
+						case 91:
+						case 123:
+							if (!str) len = type.push(char + 2) - 1;
+							break;
+						case 93:
+						case 125:
+							if (!str) {
+								if (char !== type[len]) return result({type, escape, index}, out);
 
-							type.pop();
-							len--;
-						}
-						break;
+								type.pop();
+								len -= 1;
+							}
+							break;
+					}
 				}
+
+				index += 1;
+				if (len === -1) break;
 			}
 
-			index++;
-			if (len == -1) break;
-		}
+			out.type   = type;
+			out.escape = escape;
+			out.index  = index;
 
-		result(null, data(out, [type, escape, index]));
+			result(null, out);
 
-		return len == -1;
-	};
-	/**
-	 * 是否为jQuery对象
-	 *
-	 * @param {*} value 判断值
-	 * @returns {boolean}
-	 */
-	$.isjQuery = value => $.isObject(value) && value.jquery;
-	/**
-	 * 是否为DOM对象
-	 *
-	 * @param {*} value 判断值
-	 * @returns {boolean|number}
-	 */
-	$.isDOM = value => $.type(value, true) === "dom" && value.nodeType;
-	/**
-	 * 是否为日期
-	 *
-	 * @param {*} value 判断值
-	 * @param {boolean} [str=false] 是否检验字符串
-	 * @returns {boolean}
-	 */
-	$.isDate = (value, str) => {
-		switch ($.type(value, true)) {
-			default:
-				return false;
-			case "date":
-				return true;
-			case "string":
-				if (!(str === true)) return false;
-				value = value.trim().split(" ");
-				if (!value[0] || value.length > 2) return false;
-				value[0] = value[0].replace(/-/g, "/").split("/");
-				if (value[0].length != 3) return false;
+			return len === -1;
+		},
+		/**
+		 * Year judge leap
+		 *
+		 * @param {number} year
+		 * @returns {boolean}
+		 */
+		isLeapYear (year) {
+			let num = Number(year);
 
-				let year  = Number(value[0][0]),
-					month = Number(value[0][1]),
-					day   = Number(value[0][2]);
+			if (!$.isNumber(num)) return false;
 
-				if (isNaN(year) || year < 1900) return false;
-				if (isNaN(month) || month < 1 || month > 12) return false;
-				if (isNaN(day) || day < 1 || day > 31) return false;
+			if (!(num % 4) && (num % 100)) return true;
+			if (!(num % 400)) return true;
 
-				switch (month) {
-					case 2:
-						if (day > (28 + ((!(year % 4) && (year % 100)) || !(year % 400) ? 1 : 0))) return false;
-						break;
-					case 4:
-					case 6:
-					case 9:
-						if (day > 30) return false;
-						break;
-				}
-
-				return value.length > 1 ? $.isTime(value[1], true) : true;
-		}
-	};
-	/**
-	 * 是否为时间
-	 *
-	 * @param {*} value 判断值
-	 * @param {boolean} [str=false] 是否检验字符串
-	 * @returns {boolean}
-	 */
-	$.isTime = (value, str) => {
-		switch ($.type(value, true)) {
-			default:
-				return false;
-			case "date":
-				return true;
-			case "string":
-				if (!(str === true)) return false;
-				value = value.trim().replace(/\./g, ":").split(":");
-				if (value.length < 3 || value.length > 4) return false;
-				if (value.length == 3) value.push("0");
-
-				let hour    = Number(value[0]),
-					minute  = Number(value[1]),
-					second  = Number(value[2]),
-					msecond = Number(value[3]);
-
-				if (isNaN(hour) || isNaN(minute) || isNaN(second) || isNaN(msecond)) return false;
-				if (hour < 0 || hour > 23) return false;
-				if (minute < 0 || minute > 59) return false;
-				if (second < 0 || second > 59) return false;
-				if (msecond < 0 || msecond > 999) return false;
-
-				return true;
-		}
-	};
-	/**
-	 * 是否为guid
-	 *
-	 * @param {*} value 判断值
-	 * @returns {boolean}
-	 */
-	$.isGuid = value => {
-		if (typeof(value) != "string") return false;
-		value = value.replace(/([{}])/g, "");
-		if (value.length != 36) return false;
-
-		value = value.toLowerCase().split("-");
-		if (value.length != 5) return false;
-
-		for (let i = 0, dic = [8, 4, 4, 4, 12], c, d; i < value.length; i++) {
-			d = value[i];
-			if (d.length != dic[i]) return false;
-			for (c of d) {
-				c = c.codePointAt();
-				if (!((c >= 48 && c <= 57) || (c >= 97 && c <= 102))) return false;
-			}
-		}
-
-		return true;
-	};
-	/**
-	 * 是否是两者之间，不安全判定方式
-	 *
-	 * @param {number} value
-	 * @param {number} b1
-	 * @param {number} b2
-	 * @returns {boolean}
-	 */
-	$.between = (value, b1, b2) => {
-		value = Number(value);
-		b1 = Number(b1);
-		b2 = Number(b2);
-
-		return value >= b1 && value <= b2;
-	};
-	/**
-	 * 获得回调函数
-	 *
-	 * @param {Array|arguments} value
-	 * @param {number} [index=0] 参数序号
-	 * @returns {function/null}
-	 */
-	$.callback = (value, index) => {
-		if (!$.isArray(value, true)) return null;
-		if (!$.isNumber(index)) index = 0;
-		if (index < 0 || index >= value.length) return null;
-
-		value = value[value.length - 1];
-
-		return $.isFunction(value) ? value : null;
-	};
-	/**
-	 * 对象遍历
-	 *
-	 * @param {Array|object|string|set|map} value
-	 * @param {function} callback
-	 * @param {boolean|number|object} opt 参数
-	 *    @param {boolean} [opt.detail=false] 详细内容
-	 *    @param {boolean} [opt.force=false] 强制array识别
-	 *    @param {boolean} [opt.index=0] 起始遍历位置，value=array时生效
-	 *    @param {boolean} [opt.desc=false] 倒序排列，value=array时生效
-	 * @returns {boolean}
-	 */
-	$.each = (value, callback, opt) => {
-		if (!value || !$.isFunction(callback, "async")) return false;
-
-		let detail, force, index, desc, list;
-
-		switch (typeof(opt)) {
-			case "object":
-				if (opt) {
-					detail = opt.detail;
-					force = opt.force;
-					index = opt.index;
-					desc = opt.desc
-				}
-				break;
-			case "boolean":
-				detail = opt;
-				break;
-			case "number":
-				index = opt;
-				break;
-		}
-		detail = detail === true;
-		force = force === true;
-		index = $.isNumber(index) ? index : 0;
-		desc = desc === true;
-		list = value;
-
-		switch (force ? "array" : $.type(value, true)) {
-			default:
-				return false;
-			case "string":
-			case "set":
-				list = Array.from(value);
-			case "array":
-			case "arguments":
-				if (index < 0) return false;
-
-				let n = desc ? -1 : 1,
-					i = (desc ? list.length - 1 : 0) + index * n,
-					l, d;
-
-				if (i < 0 || i >= list.length) l = i * -1;
-				else l = desc ? 1 : list.length * -1;
-
-				for (; i + l; i += n) {
-					d = list[i];
-					if (callback.apply(value, [d, i, detail ? $.type(d, true) : value, value]) === false) return false;
-				}
-
-				return true;
-			case "object":
-			case "function":
-				desc = list;
-				list = new Map();
-				for (index in desc) list.set(index, desc[index]);
-			case "map":
-				let o = [null, null],
-					k, v;
-				for (o of list) {
-					k = o[0];
-					v = o[1];
-					if (callback.apply(value, [v, k, detail ? $.type(v, true) : value, value]) === false) return false;
-				}
-				return true;
-
-		}
-	};
-	/**
-	 * 去重复
-	 *
-	 * @param {Array} value
-	 * @param {boolean} [write=false] 是否更改源
-	 * @returns {Array}
-	 */
-	$.unique = (value, write) => {
-		if (!$.isArray(value, true)) return [];
-
-		let result = Array.from(new Set(value));
-
-		if (write === true) {
-			value.splice(0, value.length);
-			for (let i = 0; i < result.length; i++) value.push(result[i]);
-		}
-
-		return result;
-	};
-	/**
-	 * 判断值是否存在
-	 *
-	 * @param {*} value
-	 * @param {Array|object|set|map} list
-	 * @param {function} callback
-	 * @returns {boolean}
-	 */
-	$.has = (value, list, callback) => {
-		let result = false;
-
-		if (!$.isFunction(callback)) callback = null;
-
-		switch ($.type(list, true)) {
-			case "array":
-			case "arguments":
-			case "object":
-				$.each(list, (d, k) => {
-					if (!Object.is(value, d)) return;
-					result = true;
-					if (callback && (callback(k) === true)) return;
-
-					return false;
-				});
-				break;
-			case "set":
-			case "map":
-				result = list.has(value);
-				break;
-		}
-
-		return result;
-	};
-	/**
-	 * 深入合并，前项覆盖后项
-	 *
-	 * @param {*} src
-	 * @param {*} dest
-	 * @param {boolean|object} opt 参数，opt=boolean时，默认匹配opt.deep参数
-	 *    @param {boolean} [opt.deep=false] 深入copy
-	 *    @param {boolean} [opt.write=true] 改写dest
-	 * @param {function} callback
-	 * @returns {*}
-	 */
-	$.clone = (src, dest, opt, callback) => {
-		let type   = $.type(src, true),
-			simple = $.isSimple(dest);
-
-		if (!$.has(type, ["array", "object", "function", "set", "map"])) return src;
-		else if (!simple && $.type(dest, true) != type) return dest;
-
-		const cbset   = (dest, key, odata, ndata, type) => {
-				  return callback ? callback.apply(dest, [key, ndata, type, odata]) : ndata;
-			  },
-			  upset   = (type, dest, k, d, t) => {
-				  switch (type) {
-					  case "set":
-						  return dest.add(d);
-					  case "map":
-						  return dest.set(k, cbset(dest, k, dest.has(k) ? dest.get(k) : void(0), d, t));
-					  case "array":
-						  return dest.length > k ? dest[k] = cbset(dest, k, dest[k], d, t) : dest.push(cbset(dest, k, void(0), d, t));
-					  default:
-						  return dest[k] = cbset(dest, k, dest[k], d, t);
-				  }
-			  },
-			  deepset = (state, src, dest, k) => {
-				  if (!state) return;
-				  $.clone(src, dest, true, (key, nd, t, od) => callback ? callback.apply(dest, [k + "." + key, nd, t, od]) : nd);
-			  };
-
-		if (opt === void(0)) opt = dest;
-		if (callback === void(0)) callback = opt;
-
-		let deep, write;
-
-		switch (typeof(opt)) {
-			case "object":
-				if (opt) {
-					deep = opt.deep;
-					write = opt.write;
-				}
-				break;
-			case "boolean":
-				deep = opt;
-				break;
-		}
-		deep = deep === true;
-		write = write !== false;
-		if (!$.isFunction(callback)) callback = null;
-
-		if (simple) {
-			switch (type) {
-				case "function":
-					return src;
-				case "set":
-					dest = new Set();
-					break;
-				case "map":
-					dest = new Map();
-					break;
-				case "array":
-					dest = [];
-					break;
+			return false;
+		},
+		/**
+		 * Type judge: date
+		 *
+		 * @param {*} value <target>
+		 * @param {boolean} [str=false] <is parse string>
+		 * @returns {boolean}
+		 */
+		isDate (value, str = false) {
+			switch ($.type(value, true)) {
 				default:
-					dest = {};
-					break;
-			}
-		}
-		if (!write) dest = $.clone(dest, null, true);
+					return false;
+				case "date":
+					return true;
+				case "string": {
+					if (str !== true) return false;
 
-		$.each(src, (d, k, t) => {
-			if (Object.is(src, d)) return;
+					let data = value.trim().replace("T", " ").replace("Z", "");
 
-			if (!deep) upset(type, dest, k, d, t);
-			else {
-				switch (t) {
-					default:
-						upset(type, dest, k, d, t);
-						break;
-					case "null":
-					case "undefined":
-						upset(type, dest, k, null, "null");
-						break;
-					case "object":
-						upset(type, dest, k, {}, "object");
+					data = data.split(" ");
 
-						deepset($.isObject(dest[k]), d, dest[k], k);
-						break;
-					case "array":
-					case "arguments":
-						upset(type, dest, k, [], "array");
+					if (!data[0] || data.length > 2) return false;
+					data[0] = data[0].replace(/-/g, "/").split("/");
+					if (data[0].length !== 3) return false;
 
-						deepset(d.length > 0 && $.isArray(dest[k]), d, dest[k], k);
-						break;
-					case "set":
-						upset(type, dest, k, new Set(), "set");
+					let [year, month, day] = value[0];
 
-						deepset(d.size > 0 && $.type(dest[k], true) == "set", d, dest[k], k);
-						break;
-					case "map":
-						upset(type, dest, k, new Map(), "map");
+					year  = Number(year);
+					month = Number(month);
+					day   = Number(day);
 
-						deepset(d.size > 0 && $.type(dest[k], true) == "map", d, dest[k], k);
-						break;
+					if (!$.isNumber(year, {min: 1900})) return false;
+					if (!$.isNumber(month, {min: 1, max: 12})) return false;
+					if (!$.isNumber(day, {min: 1, max: 31})) return false;
+
+					switch (month) {
+						case 2:
+							if (day > (28 + ($.isLeapYear(year) ? 1 : 0))) return false;
+							break;
+						case 4:
+						case 6:
+						case 9:
+							if (day > 30) return false;
+					}
+
+					return data.length > 1 ? $.isTime(data[1], true) : true;
 				}
 			}
-		}, true);
+		},
+		/**
+		 * Type judge: time
+		 *
+		 * @WARN: if value is string only parse time
+		 *
+		 * @param {*} value <target>
+		 * @param {boolean} [str=false] <is parse string>
+		 * @returns {boolean}
+		 */
+		isTime (value, str = false) {
+			switch ($.type(value, true)) {
+				default:
+					return false;
+				case "date":
+					return true;
+				case "string":
+					if (str !== true) return false;
 
-		return dest;
+					let data = value.trim().replace(/\./g, ":").split(":");
+
+					if (data.length < 2 || data.length > 4) return false;
+					if (data.length < 4) data.push(0, 0);
+
+					let [hour, minute, second, msecond] = data;
+
+					if ($.isNumber(hour, {min: 0, max: 23})) return false;
+					if ($.isNumber(minute, {min: 0, max: 59})) return false;
+					if ($.isNumber(second, {min: 0, max: 59})) return false;
+					if ($.isNumber(msecond, {min: 0, max: 999})) return false;
+
+					return true;
+			}
+		},
+		/**
+		 * Type judge: jquery object
+		 *
+		 * @param {*} value <target>
+		 * @returns {boolean}
+		 */
+		isjQuery (value) {
+			return $.isObject(value) && value.jquery && true;
+		},
+		/**
+		 * Type judge: DOM object
+		 *
+		 * @param {*} value <target>
+		 * @returns {boolean|number}
+		 */
+		isDOM (value) {
+			return $.type(value, true) === "dom" && value.nodeType;
+		},
+		/**
+		 * Value judge: guid
+		 *
+		 * @WARN: only parse string
+		 *
+		 * @param {*} value <target>
+		 * @returns {boolean}
+		 */
+		isGuid (value) {
+			if (!$.isString(value, 36)) return false;
+
+			let data = value.replace(/^\{|\}$/g, "");
+			if (data.length !== 36) return false;
+
+			data = data.toLowerCase().split("-");
+			if (data.length !== 5) return false;
+
+			for (let i = 0, dic = [8, 4, 4, 4, 12], c, d; i < value.length; i++) {
+				d = value[i];
+
+				if (d.length !== dic[i]) return false;
+
+				d = d.split("");
+				for (let j = 0; j < d.length; j++) {
+					c = d[j].codePointAt();
+					if (!((c >= 48 && c <= 57) || (c >= 97 && c <= 102))) return false;
+				}
+			}
+
+			return true;
+		},
+		hasOwnProperty (value, key) {
+			switch ($.type(value)) {
+
+			}
+		}
 	};
-})(this);
+
+	jShow = {...owner, ...api};
+})(jShow);
 /**
  * ==========================================
  * Name:           jShow's Class Extensions
@@ -884,116 +1085,157 @@
  * Description:    Class Extensions
  * Log:
  * 2019-02-14    Init Class
+ * 2019-05-20    Format Code to jShow Style Guide
  * ==========================================
  */
-($ => {
+(owner => {
+	const $ = global.jShow;
+
 	/*
 	 ====================================
-	 = 类名: TObject
-	 = 功  能: 基类
-	 = 类函数：
-	 =   create    = 初始化函数
-	 = 对象属性：
-	 =   className  = 函数名
-	 =   errorMax   = 记录错误上限
-	 =   lastError  = 最后次错误记录
-	 = 对象函数：
-	 =   free       = 注销
-	 =   on         = 事件绑定
-	 =   off        = 事件移除
-	 =   call       = 事件调用
-	 =   getError   = 获得指定错误记录
-	 =   setError   = 设置错误记录
-	 =   clearError = 清除错误记录
+	 = Name: TObject
+	 = Info: 基类
+	 = Static Method：
+	 =   create     = static create function
+	 = Object Property:
+	 =   className  = get className (readonly)
+	 =   errorMax   = error messag limit
+	 =   eventMax   = event function limit
+	 = Object Method:
+	 =   free       = class object free
+	 =   on         = bind function by key
+	 =   off        = unbind function by key
+	 =   call       = call function
+	 =   getError   = get error message by index
+	 =   setError   = set error message by data
+	 =   lastError  = get last error message
+	 =   clearError = clear error message
 	 ====================================
 	 */
 	class TObject {
 		constructor () {
 			this.__className = "TObject";
 
-			this.__error_list = [];
-			this.__error_max = 5;
-			this.__event_list = {};
-			this.__event_max = 99;
+			this.__error__    = [];
+			this.__errorMax__ = 5;
+			this.__event__    = {};
+			this.__eventMax__ = 99;
 		}
 
 		free () {
-
+			this.__error__ = null;
+			this.__event__ = null;
 		}
 
-		on (key, func) {
+		valueOf () {
+			return this;
+		}
+
+		toString () {
+			return `${this.className} Object`;
+		}
+
+		addListenEvent (key, ...func) {
 			if (!$.isString(key)) return this;
+			if (!$.isArray(func, true)) return this;
 
-			let list = this.__event_list[key] || (this.__event_list[key] = []),
-				max  = this.__event_max,
-				each = (o, l, n, m) => {
-					for (let i = n, f; i < l.length; i++) {
-						switch ($.type(f = l[i], true)) {
-							case "function":
-								o.push(f);
-								if (o.length > m) o.pop();
-								break;
-							case "array":
-								each(o, f, 0, m);
-								break;
-						}
+			const each = (own, list, num, max) => {
+				for (let i = num, f; i < list.length; i++) {
+					f = list[i];
+
+					switch ($.type(f, true)) {
+						case "function":
+							own.push(f);
+							if (own.length > max) own.pop();
+							break;
+						case "array":
+							each(own, f, 0, max);
+							break;
 					}
-				};
+				}
+			};
 
-			each(list, arguments, 1, max);
+			let list = this.__event__[key];
+
+			if (!list) {
+				list                = [];
+				this.__event__[key] = list;
+			}
+
+			each(list, func, 1, this.eventMax);
 
 			return this;
 		}
 
-		off (key, func) {
-			if (arguments.length < 1) this.__event_list = {};
-			else if (typeof(func) !== "function") this.__event_list[key] = [];
-			else {
-				let list = this.__event_list[key] || [];
+		removeListenEvent (key, func) {
+			try {
+				if (arguments.length < 1) {
+					this.__event__ = {};
+					return;
+				}
+
+				if (!$.isString(key)) return;
+
+				if (!$.isFunction(func)) {
+					this.__event__[key] = [];
+					return;
+				}
+
+				let list = this.__event__[key] || [];
 
 				for (let i = 0; i < list.length;) {
 					if (Object.is(func, list[i])) list.splice(i, 1);
-					else i++;
+					else i += 1;
 				}
 			}
-
-			return this;
+			finally {
+				return this;
+			}
 		}
 
-		async call (key, arg) {
-			const dtd  = $.Deferred(true),
-				  list = this.__event_list[key] || [];
+		on (key, ...func) {
+			return this.addListenEvent(key, ...func);
+		}
 
-			arg = Array.prototype.slice.call(arguments, 1);
-			if (arg.length === 1 && $.isArray(arg[0])) arg = arg[0];
+		off (key, func) {
+			return this.removeListenEvent(key, ...func);
+		}
+
+		async call (key, ...arg) {
+			const dtd  = $.Deferred(true);
+			const list = this.__event__[key] || [];
 
 			try {
+				let owner = arg.length > 0 ? arg[0] : this;
+
 				for (let i = 0, f; i < list.length; i++) {
-					switch ($.type(f = list[i], true)) {
+					f = list[i];
+					switch ($.type(f, true)) {
 						case "function":
-							list[i].apply(this, arg);
+							list[i].apply(owner, arg);
 							break;
 						case "asyncfunction":
-							await list[i].apply(this, arg);
+							await list[i].apply(owner, arg);
 							break;
 					}
 				}
+
+				dtd.resolve(key);
 			}
 			catch (e) {
 				dtd.reject(e);
 			}
 
-			dtd.resolve(key);
-
 			return dtd.promise();
 		}
 
 		getError (index) {
-			let list = this.__error_list;
+			const list = this.__error__;
 
-			if (!$.isNumber(index, {min: 0, max: list.length})) return null;
+			if (list.length < 1) return null;
+			if (!$.isNumber(index, {min: 0, max: list.length - 1})) return null;
 
-			return index < list.length ? list[index] : null;
+			return list[index];
 		}
 
 		setError (level, code = level, msg = code) {
@@ -1001,22 +1243,35 @@
 			if (!$.isNumber(code)) code = -1;
 			if (!$.isString(msg)) msg = "";
 
-			let list = this.__error_list,
-				max  = this.__error_max,
-				err  = {level, code, msg};
+			const list = this.__error__;
+			const max  = this.errorMax;
+
+			let err = {level, code, msg};
 
 			while (list.length > max) list.shift();
 			list.push(err);
 
-			this.call("error", [err]);
+			this.call("error", err);
+
+			return err;
+		}
+
+		lastError () {
+			const list = this.__error__;
+
+			if (list.length < 1) return null;
 
 			return list[list.length - 1];
 		}
 
 		clearError () {
-			this.__error_list = [];
+			this.__error__ = [];
 
 			return this;
+		}
+
+		get [Symbol.toStringTag] () {
+			return this.className;
 		}
 
 		get className () {
@@ -1024,23 +1279,35 @@
 		}
 
 		get errorMax () {
-			return this.__error_max;
+			return this.__errorMax__;
 		}
 
 		set errorMax (value) {
 			if (!$.isNumber(value, {min: 1, max: 99})) return;
+			if (value === this.errorMax) return;
 
-			this.__error_max = value;
+			this.__errorMax__ = value;
 
-			let list = this.__error_list;
+			const list = this.__error__;
 
 			while (list.length > value) list.shift();
 		}
 
-		get lastError () {
-			let list = this.__error_list;
+		get eventMax () {
+			return this.__eventMax__;
+		}
 
-			return list.length > 0 ? list[list.length - 1] : null;
+		set eventMax (value) {
+			if (!$.isNumber(value, {min: 1, max: 99})) return;
+			if (value === this.__eventMax__) return;
+
+			this.__eventMax__ = value;
+
+			const list = this.__event__;
+
+			$.each(list, d => {
+				while (d.length > value) d.shift();
+			});
 		}
 
 		static create () {
@@ -1050,124 +1317,166 @@
 
 	/*
 	 ====================================
-	 = 类名: TSeal
-	 = 功  能: 密封类生成
-	 = 对象属性：
-	 =   className = 函数名
-	 = 对象函数：
-	 =   clone     = 复制本体
-	 =   Create    = 初始化
+	 = Name: TSeal
+	 = Info: The sealed class is mounted in prototype way, and the method of sealing is not in accordance with the specification
+	 =
+	 = @WARN: this class like TObject
+	 =
+	 = Object Method:
+	 =   clone     = copy this object
+	 =   create    = create object, like constructor
 	 ====================================
 	 */
-	$.TSeal = (() => {
-		const initClassError = function () {
-				  if (this.getError || this.setError || this.lastError) return;
-				  this.__error__ = [];
-				  this.errorMax = 5;
-				  this.getError = function (index) {
-					  index = $.isNumber(index, {min: 0}) ? index : -1;
+	TSeal = (() => {
+		const clsError = function initClassError () {
+			if (this.getError || this.setError || this.lastError) return;
 
-					  let list = this.__error__;
+			this.__error__ = [];
+			this.errorMax  = 5;
+			this.getError  = function getError (index = -1) {
+				const list = this.__error__;
+				let num    = Number(index);
 
-					  return list.length < 1 ? null : list[index < 0 ? list.length - 1 : index];
-				  };
-				  this.setError = function (level, code, msg) {
-					  if (arguments.length < 2) code = level;
-					  if (arguments.length < 3) msg = code;
+				if (list.length < 1) return null;
 
-					  if (!$.has(level, ["log", "info", "error"])) level = "log";
-					  if (!$.isNumber(code)) code = -1;
-					  if (!$.isString(msg)) msg = "";
+				if (!$.isNumber(num, {min: 0, max: list.length - 1})) num = list.length - 1;
 
-					  let list = this.__error__,
-						  err  = {level, code, msg};
+				return list[num];
+			};
+			this.setError  = function setError (level, code = level, msg = code) {
+				if (!$.has(level, ["log", "info", "error"])) level = "log";
+				if (!$.isNumber(code)) code = -1;
+				if (!$.isString(msg)) msg = "";
 
-					  while (list.length >= this.errorMax) list.shift();
-					  list.push(err);
+				const list = this.__error__;
+				const max  = this.errorMax;
 
-					  this.call("error", [err]);
+				let err = {level, code, msg};
 
-					  return list[list.length - 1];
-				  };
-				  this.lastError = function () {
-					  let list = this.__error__;
+				while (list.length >= max) list.shift();
+				list.push(err);
 
-					  return list.length > 0 ? list[list.length - 1] : null;
-				  };
-			  },
-			  initClassEvent = function () {
-				  if (this.on || this.off || this.call) return;
-				  this.__event__ = {};
-				  this.on = function (key, func) {
-					  let each = (o, l, n) => {
-							  for (let i = n, f; i < l.length; i++) {
-								  f = l[i];
+				this.call("error", [err]);
 
-								  switch ($.type(f, true)) {
-									  case "function":
-										  o.push(f);
-										  break;
-									  case "array":
-										  each(o, f, 0);
-										  break;
-								  }
-							  }
-						  },
-						  list = this.__event__[key] || (this.__event__[key] = []);
+				return err;
+			};
+			this.lastError = function () {
+				const list = this.__error__;
 
-					  each(list, arguments, 1);
+				if (list.length < 1) return null;
 
-					  return this;
-				  };
-				  this.off = function (key, func) {
-					  if (arguments.length == 0) this.__event__ = {};
-					  else if (typeof(func) != "function") this.__event__[key] = [];
-					  else {
-						  let list = this.__event__[key];
+				return list[list.length - 1];
+			};
+		};
+		const clsEvent = function initClassEvent () {
+			if (this.on || this.off || this.call) return;
 
-						  if (list && list.length > 0) {
-							  for (let i = 0; i < list.length; i++) {
-								  if (func !== list[i]) i++;
-								  else list.splice(i, 1);
-							  }
-						  }
-					  }
+			this.__event__ = {};
+			this.eventMax  = 99;
+			this.on        = function (key, ...func) {
+				if (!$.isString(key)) return this;
+				if (!$.isArray(func, true)) return this;
 
-					  return this;
-				  };
-				  this.call = function (key, arg) {
-					  let list = this.__event__[key];
+				const each = (own, list, num, max) => {
+					for (let i = num, f; i < list.length; i++) {
+						f = list[i];
 
-					  if (list && list.length > 0) {
-						  if (arguments.length < 2) arg = [];
-						  else if (!$.isArray(arg)) arg = [arg];
+						switch ($.type(f, true)) {
+							case "function":
+								own.push(f);
+								if (own.length > max) own.pop();
+								break;
+							case "array":
+								each(own, f, 0, max);
+								break;
+						}
+					}
+				};
 
-						  for (let i = 0; i < list.length; i++) list[i].apply(this, arg);
-					  }
+				let list = this.__event__[key];
 
-					  return this;
-				  };
-			  };
+				if (!list) {
+					list                = [];
+					this.__event__[key] = list;
+				}
+
+				each(list, func, 1, this.eventMax);
+
+				return this;
+			};
+			this.off       = function (key, func) {
+				try {
+					if (arguments.length < 1) {
+						this.__event__ = {};
+						return;
+					}
+
+					if (!$.isString(key)) return;
+
+					if (!$.isFunction(func)) {
+						this.__event__[key] = [];
+						return;
+					}
+
+					let list = this.__event__[key] || [];
+
+					for (let i = 0; i < list.length;) {
+						if (Object.is(func, list[i])) list.splice(i, 1);
+						else i += 1;
+					}
+				}
+				finally {
+					return this;
+				}
+			};
+			this.call      = async function (key, ...arg) {
+				const dtd  = $.Deferred(true);
+				const list = this.__event__[key] || [];
+
+				try {
+					let owner = arg.length > 0 ? arg[0] : this;
+
+					for (let i = 0, f; i < list.length; i++) {
+						f = list[i];
+						switch ($.type(f, true)) {
+							case "function":
+								list[i].apply(owner, arg);
+								break;
+							case "asyncfunction":
+								await list[i].apply(owner, arg);
+								break;
+						}
+					}
+
+					dtd.resolve(key);
+				}
+				catch (e) {
+					dtd.reject(e);
+				}
+
+				return dtd.promise();
+			};
+		};
 
 		function TSeal () {}
 
-		TSeal.extend = function (childAPI) {
+		TSeal.extend    = function (childAPI) {
 			if (!$.isObject(childAPI)) throw new Error(console.error("[TSeal] object is null"));
 
-			const className   = childAPI.className || "TSeal",
-				  parentClass = TSeal,
-				  initChild   = function () {
-					  initClassError.call(this);
-					  initClassEvent.call(this);
+			const className   = childAPI.className || "TSeal";
+			const parentClass = TSeal;
+			const initChild   = function initClass (...arg) {
+				clsError.call(this);
+				clsEvent.call(this);
 
-					  this["create"].apply(this, arguments);
+				if (this.create) this.create.apply(this, arg);
 
-					  return this;
-				  };
+				return this;
+			};
 
 			let childClass = null;
 
-			eval("childClass=function " + className + "(){return initChild.apply(this,arguments);}");
+			eval(`childClass=function ${className}(...arg){return initChild.apply(this,arg);}`);
 
 			childClass.prototype = Object.create(parentClass.prototype);
 			childClass.className = className;
@@ -1185,9 +1494,12 @@
 		TSeal.className = "TSeal";
 		TSeal.prototype = {
 			className: "TSeal",
-			create:    function () { return this; },
-			free:      function () {},
-			clone:     function () { return $.clone(this, true); }
+			create () { return this; },
+			free () {},
+			clone () { return $.clone(this, true); },
+			valueOf () { return this; },
+			toString () { return `${this.className} Object`; },
+			get [Symbol.toStringTag] () { return this.className; }
 		};
 
 		return TSeal;
@@ -1195,33 +1507,42 @@
 
 	/*
 	 ====================================
-	 = 类名: TCache
-	 = 功  能：缓存类，基于Buffer进行缓存循环运用
-	 = 继  承：TObject
-	 = 类函数：
-	 =   create    = 初始化函数
-	 = 对象属性：
-	 =   max       = 最大缓冲大小
-	 =   index     = 当前数据位
-	 =   length    = 有效数据长度
-	 =   offset    = 空白数据起始位
-	 =   surplus   = 剩余缓冲大小
-	 = 对象函数：
-	 =   valueOf   = 真实数据块
-	 =   clear     = 清空缓存
-	 =   resize    = 数据整理
-	 =   push      = 推入数据
-	 =   remove    = 删除数据
+	 = Name:   TCache
+	 = Info：  Perform cache looping by Buffer
+	 = Extend：TObject
+	 = Static Method:
+	 =   create    = static create function
+	 = Object Property:
+	 =   max       = cache buffer limit
+	 =   index     = real data start position of cache
+	 =   length    = real data length
+	 =   offset    = block cache start position of cache
+	 =   surplus   = surplus block length
+	 = Object Method:
+	 =   valueOf   = cache buffer
+	 =   clear     = clear data
+	 =   resize    = resize data position
+	 =   push      = push data to cache
+	 =   remove    = remove data to cache
+	 =   parse     = parse real data, extend must rewrite this method
+	 = Object Event:
+	 =   data      = output data event
+	 =   discard   = discard data event
 	 ====================================
 	 */
 	class TCache extends TObject {
-		constructor (size) {
+		/**
+		 * 缓存初始化，可以设置最大缓存
+		 *
+		 * @param {number} [size=128] 最大缓存，单位字节(取值32 <= size <= 10K)
+		 */
+		constructor (size = 128) {
 			super();
 
 			this.__className = "TCache";
 
-			this._max = $.isNumber(size, {min: 32, max: 10240}) ? size : 128;
-			this._index = 0;
+			this._max    = $.isNumber(size, {min: 32, max: 10240}) ? size : 128;
+			this._index  = 0;
 			this._length = 0;
 
 			this._cache = Buffer.alloc(this._max);
@@ -1229,58 +1550,156 @@
 
 		free () {
 			this._cache = null;
+
+			super.free();
 		}
 
 		valueOf () {
 			return this._cache;
 		}
 
-		resize (force) {
-			if (force === true) this.clear();
-			else {
-				if (this._length > 0) this.valueOf().copy(this.valueOf(), 0, this.index, this.offset);
+		/**
+		 * 返回缓存内容
+		 *
+		 * @param {string} [encoding=utf8] 返回字符串编码形式
+		 * @returns {string}
+		 */
+		toString (encoding = "utf8") {
+			return this._cache.toString(encoding, this.index, this.offset);
+		}
+
+		/**
+		 * 调准数内容，返回可用剩余空间大小
+		 *
+		 * @param {number} [len=0] 调整数字，=0 时进行数据移动，<surplus 时移动index
+		 * @returns {number}
+		 */
+		resize (len = 0) {
+			let val = $.isNumber(len, {min: 0}) ? len : 0;
+
+			if (val === 0) {
+				const data = this._cache;
+
+				if (this.length > 0) data.copy(data, 0, this.index, this.offset);
 
 				this._index = 0;
+			}
+			else if (val < this.surplus) {
+				this._index += len;
+				this._length -= len;
+			}
+			else {
+				this._index  = 0;
+				this._length = 0;
 			}
 
 			return this.surplus;
 		}
 
 		clear () {
-			this._index = 0;
+			this._index  = 0;
 			this._length = 0;
 
 			return this;
 		}
 
+		/**
+		 * 循环读取数据buf，并同步调用parse函数进行数据识别及输出
+		 *
+		 * @param {buffer} buf
+		 * @returns {TCache}
+		 */
 		push (buf) {
-			let offset = buf.byteOffset,
-				count  = buf.byteLength,
-				write;
+			const data = this._cache;
+
+			let offset = buf.byteOffset;
+			let count  = buf.byteLength;
+			let write  = 0;
 
 			while (count > 0) {
-				write = Math.min(count, (write = this.surplus) > 0 ? write : this.resize());
-				if (write < 1) write = this.resize(true);
+				write = this.surplus;
+				if (write < 1) write = this.resize();
 
-				buf.copy(this.valueOf(), this.offset, offset, offset + write);
+				write = Math.min(count, write);
+				if (write < 1) {
+					this.call("discard", data.slice(this.index, this.offset), true);
+					write = this.resize(this.max);
+				}
 
+				buf.copy(data, this.offset, offset, offset + write);
 				this._length += write;
+
 				offset += write;
 				count -= write;
 
-				if (this.parse) this.parse();
+				write = this.parse();
+				if (write > 0) {
+					this.call("data", data.slice(this.index, write + this.index));
+					this.resize(write);
+				}
+				else if (write < 0) {
+					this._index += -(write);
+				}
 			}
 
 			return this;
 		}
 
-		remove (size) {
-			size = Math.min(size, this.length);
+		/**
+		 * 删除数据，允许删除数据中段
+		 *
+		 * @param {object|number} opt
+		 *    @param {number} [opt.start] 删除起始位置
+		 *    @param {number} [opt.size] 删除长度
+		 * @returns {TCache}
+		 */
+		remove (opt) {
+			let {
+					start = 0,
+					len   = this.length
+				} = opt;
 
-			this._index += size;
-			this._length -= size;
+			if ($.isNumber(opt, {min: 0})) len = opt;
+
+			start = Number(start);
+			len   = Number(len);
+
+			if (isNaN(len) || len < 1) return this;
+
+			if (isNaN(start)) start = 0;
+
+			if (start < 0) start += this.length;
+			if (start < 0 || start >= this.length) return this;
+
+			if (start > 0) {
+				let end = start + len;
+
+				if (this.length - end > 0) {
+					let data = this._cache;
+
+					data.copy(data, start + this.index, end + this.index, this.length - end);
+				}
+
+				this._length -= len;
+			}
+			else {
+				this.resize(len);
+			}
+
+			if (size !== 0) this.resize(size);
 
 			return this;
+		}
+
+		/**
+		 * 数据解析，需要在子类中改下，否则输出所有数据内容，不需要处理时，返回0
+		 * >0 时，输出返回数量的数据，触发data事件
+		 * <0 时，删除返回数量的数据
+		 *
+		 * @returns {number}
+		 */
+		parse () {
+			return this.length;
 		}
 
 		get max () {
@@ -1314,62 +1733,70 @@
 
 	/*
 	 ====================================
-	 = 类名: TList
-	 = 功  能: 队列类
-	 = 继  承：TObject
-	 = 对象属性：
-	 =   length    = 数据长度
-	 =   type      = 数据限定类型
-	 =   first     = 首个数据
-	 =   last      = 尾端数据
-	 = 对象函数：
-	 =   clear     = 清空数据
-	 =   sort      = 数据排序，接受自定义排序函数
-	 =   each      = 数据检索，遍历函数为true时，删除遍历项
-	 =   set       = 设置数据，校验数据类型
-	 =   del       = 删除数据
-	 =   add       = 添加数据，校验数据类型
-	 =   addList   = 批量添加数据
-	 =   push      = 先进后出，添加数据
-	 =   pop       = 先进后出，获取数据
-	 =   put       = 先进先出，添加数据
-	 =   poll      = 先进先出，获取数据
+	 = Name:   TList
+	 = Info:   Queue class by Array, you must limit type when init class
+	 = Extend：TObject
+	 = Object Propertry：
+	 =   length    = data length
+	 =   type      = limit tyoe
+	 =   first     = first data
+	 =   last      = last data
+	 = Object Method：
+	 =   clear     = clear data
+	 =   sort      = sort data，can custom sort function
+	 =   each      = each data, if callback return is false, delete item
+	 =   set       = set data, check data type
+	 =   del       = delete data
+	 =   add       = add data, check data type
+	 =   addList   = add datas by list
+	 =   push      = add data, from list tail
+	 =   pop       = get and delete data, from list tail
+	 =   put       = add data from list head
+	 =   poll      = get and delete data, from list head
 	 ====================================
 	 */
-	(function (TObject) {
+	const TList = (function (TObject) {
 		const isType   = (obj, type) => {
-				  let objType;
+			if (!type || type === "*") return true;
 
-				  if (!type || type == "*" || (type == (objType = $.type(obj, true)))) return true;
-				  if (type == "object" && (objType == "null" || objType == "undefined")) return false;
-				  if (objType != "object") return false;
-				  if (type == "date" && obj.className == "TChinaDate") return true;
+			let otype = $.type(obj, true);
 
-				  return false;
-			  },
-			  fmtIndex = (index, def, max) => {
-				  index = $.isNumber(index) ? index : def;
+			if (type === otype) return true;
 
-				  if (index < 0) index = -1;
-				  else if (index >= max) index = max;
+			switch (type) {
+				case "date":
+					if (otype === "TChinaDate" || obj.className === "TChinaDate") return true;
+					break;
+			}
 
-				  return index;
-			  },
-			  setData  = (own, data) => {
-				  let i;
+			return false;
+		};
+		const fmtIndex = (index, def, max) => {
+			let num = $.isNumber(index) ? index : def;
 
-				  for (i = 0; i < own.length; i++) delete own[i];
-				  for (i = 0; i < data.length; i++) own[i] = data[i];
+			if (num < 0) num = -1;
+			else if (num >= max) num = max;
 
-				  if ((own.length = data.length) > 0) {
-					  own.first = own[0];
-					  own.last = own[own.length - 1];
-				  }
-				  else {
-					  own.first = null;
-					  own.last = null;
-				  }
-			  };
+			return num;
+		};
+		const addData  = (own, value, index) => {
+			const len = own.length - 1;
+
+			if (index !== len) {
+				for (let i = len; i >= index; i--) own[i] = own[i - 1];
+			}
+
+			own[index] = value;
+		};
+		const delData  = (own, index, old) => {
+			const len = own.length - 1;
+
+			if (index !== len) {
+				for (let i = index; i <= len; i++) own[i] = own[i + 1];
+			}
+
+			delete own[old];
+		};
 
 		class TList extends TObject {
 			constructor (type) {
@@ -1377,40 +1804,82 @@
 
 				this.__className = "TList";
 
-				this._data = [];
-				this._type = $.isString(type) ? type : "*";
-				this._length = 0;
+				this._value = [];
+				this._type  = "*";
+
+				if ($.isString(type)) this._type = type;
 			}
 
 			free () {
-				super.free();
+				this._value = null;
 
-				this.clear();
+				super.free();
 			}
 
 			valueOf () {
-				return this._data;
+				return this._value;
+			}
+
+			toString () {
+				return this._value.toString();
+			}
+
+			[Symbol.iterator] () {
+				const data = this._value;
+
+				return (function* () {
+					for (let i = 0; i < data.length; i++) {
+						yield data[i];
+					}
+				})();
+			}
+
+			get length () {
+				return this._value.length;
+			}
+
+			get type () {
+				return this._type;
+			}
+
+			get first () {
+				const data = this._value;
+
+				if (data.length < 1) return null;
+
+				return data[0];
+			}
+
+			get last () {
+				const data = this._value;
+
+				if (data.length < 1) return null;
+
+				return data[data.length - 1];
 			}
 
 			clear () {
-				this._data = [];
-				this._length = 0;
+				const data = this._value;
 
-				setData(this, this._data);
+				for (let i = 0; i < data.length; i++) delete this[i];
+
+				this._value = [];
 
 				this.call("clear");
 
 				return this;
 			}
 
-			sort (func) {
-				func = $.isFunction(func, true) ? func : null;
+			sort (callback) {
+				let func = callback;
 
-				let list = this.valueOf();
+				if (!$.isFunction(func)) func = null;
 
-				list.sort.apply(this, func || []);
+				const data = this._value;
 
-				setData(this, list);
+				data.sort.apply(this, func || []);
+
+				for (let i = 0; i < data.length; i++) this[i] = data[i];
 
 				this.call("sort");
 
@@ -1418,7 +1887,7 @@
 			}
 
 			each (func) {
-				if (!$.isFunction(func, true)) return this;
+				if (!$.isFunction(func)) return this;
 
 				let list = this.valueOf();
 
@@ -1433,14 +1902,17 @@
 				return this;
 			}
 
-			set (index, data) {
-				index = fmtIndex(index, -1, this.length);
+			set (index, value) {
+				if (!isType(value, this.type)) return -1;
 
-				if (!isType(data, this.type)) return -1;
+				const data = this._value;
 
-				this._data[index] = data;
+				if (!$.isNumber(index, {min: 0, max: data.length - 1})) return -1;
 
-				this.call("set", {index: index, data: data});
+				data[index] = value;
+				this[index] = value;
+
+				this.call("set", {index: index, data: value});
 
 				return index;
 			}
@@ -1448,101 +1920,115 @@
 			del (index) {
 				if (this.length === 0) return null;
 
-				index = fmtIndex(index, 0, this.length - 1);
+				const data = this._value;
+				let len    = data.length - 1;
 
-				let list = this.valueOf(),
-					result;
+				if (!$.isNumber(index, {min: 0, max: len})) return -1;
 
-				if (index <= 0) result = list.shift();
-				else if (index >= this.length - 1) result = list.pop();
+				let item;
+
+				if (index === len) {
+					item = data.pop();
+				}
+				else if (index === 0) {
+					item = data.shift();
+				}
 				else {
-					result = list[index];
-
-					list.splice(index, 1);
+					item = data[inde];
+					data.splice(index, 1);
 				}
 
-				setData(this, list);
+				delData(this, index, len);
 
-				this.call("del", {index: index});
+				this.call("del", {index: index, data: item});
 
-				return result;
+				return item;
 			}
 
-			add (data, index) {
-				index = fmtIndex(index, this.length, this.length);
+			add (value, index) {
+				if (!isType(value, this.type)) return -1;
 
-				if (!isType(data, this.type)) return -1;
+				let num  = fmtIndex(index, this.length, this.length);
+				let data = this._value;
+				let len  = data.length;
 
-				let list = this.valueOf();
+				if (num <= 0) {
+					data.unshift(value);
 
-				if (index <= 0) {
-					list.unshift(data);
-
-					index = 0;
+					num = 0;
 				}
-				else if (index >= this.length) list.push(data);
-				else list.splice(index, 0, data);
+				else if (num >= len) {
+					data.push(value);
 
-				setData(this, list);
+					num = len;
+				}
+				else {
+					data.splice(num, 0, value);
+				}
 
-				this.call("add", {index: index, data: data});
+				addData(this, value, num);
 
-				return index;
+				this.call("add", {index: num, data: value});
+
+				return num;
 			}
 
-			addList (data, index) {
-				if ($.isArray(data) && data.length > 0) {
-					index = fmtIndex(index, this.length, this.length);
+			addList (value, index, desc = false) {
+				if (!$.isArray(value, {min: 1})) return this;
 
-					let _this = this;
+				const data = value;
+				if (desc === true) data.reverse();
 
-					$.each(data, function (d, i) {
-						_this.add(d, index + i);
-					});
-				}
+				let num = this.length;
+				num     = fmtIndex(index, num, num);
+
+				for (let i = 0; i < data.length; i++) this.add(data[i], num + i);
 
 				return this;
 			}
 
-			push (data) {
-				return this.add(data, this.length);
+			push (...value) {
+				return this.addList(value, this.length);
 			}
 
 			pop () { return this.del(this.length); }
 
-			put (data) { return this.add(data, 0); }
+			put (...value) { return this.addList(value, 0, true); }
 
 			poll () { return this.del(0); }
 
-			get length () {
-				return this._length;
-			}
-
-			get type () {
-				return this._type;
+			static create (type) {
+				return (new TList(type));
 			}
 		}
 
-		$.TList = TList;
+		return TList;
 	})(TObject);
 
 	/*
 	 ====================================
-	 = 类名: TChinaDate
-	 = 功  能: 中文日期类
-	 = 类函数：
-	 =   toString   = 转换为字符串
-	 = 对象属性：
-	 =   Year,Month,Day,Term,Zodiac  = 年，月，日，节气，星座
-	 =   CYear,CMonth,CDay           = 农历年，农历月，农历日
-	 =   IsLeapYear                  = 是否是闰年
-	 = 对象函数：
-	 =   getTime    = 获取当前毫秒数
-	 =   setTime    = 设置当前时间
-	 =   toString   = 转换为字符串
+	 = Name:   TChinaDate
+	 = Info:   Chinese date
+	 = Extend: TObject
+	 = Static Method：
+	 =   toString   = conver to string
+	 = Object Propertry：
+	 =   Year        = year
+	 =   Month       = month
+	 =   Day         = day
+	 =   Term        = term of chinese date
+	 =   Zodiac      = zodizc of chinese date
+	 =   CYear       = year of chinese date
+	 =   CMonth      = month of chinese date
+	 =   CDay        = day of chinese date
+	 =   IsLeapYear  = is leap year
+	 = Object Method：
+	 =   getTime    = get object millisecond
+	 =   setTime    = set time
+	 =   toString   = output format string by fmt
 	 ====================================
 	 */
-	(function (TObject) {
+	const TChinaDate = (function (TObject) {
 		const ct          = {
 				  monthInfoDt: new Date(1900, 0, 31),
 				  monthInfo:   [
@@ -1614,17 +2100,23 @@
 				this._nt = {year: 0, month: 0, day: 0};
 				this._dt = new Date();
 
-				this._Year = "";
-				this._Month = "";
-				this._Day = "";
-				this._Term = "";
-				this._Zodiac = "";
-				this._cYear = "";
-				this._cMonth = "";
-				this._cDay = "";
+				this._Year       = "";
+				this._Month      = "";
+				this._Day        = "";
+				this._Term       = "";
+				this._Zodiac     = "";
+				this._cYear      = "";
+				this._cMonth     = "";
+				this._cDay       = "";
 				this._IsLeapYear = false;
 
 				this.setTime(dt);
+			}
+
+			free () {
+				this._nt = null;
+
+				super.free();
 			}
 
 			get Year () {
@@ -1667,126 +2159,19 @@
 				return this.getTime();
 			}
 
-			getTime () {
-				return this._dt.getTime();
-			}
-
-			setTime (dt) {
-				const getLeapYearMonth = year => {
-						  return ct.monthInfo[year - ct.monthInfoDt.getFullYear()] & 0xf;
-					  },
-					  getLeapYearDay   = year => {
-						  return getLeapYearMonth(year) ? ((ct.monthInfo[year - ct.monthInfoDt.getFullYear()] & 0x10000) ? 30 : 29) : 0;
-					  },
-					  getTotalYearDay  = year => {
-						  let sum   = 348,
-							  minfo = ct.monthInfo[year - ct.monthInfoDt.getFullYear()];
-
-						  for (let i = 0x8000; i > 0x8; i >>= 1) sum += (minfo & i) ? 1 : 0;
-
-						  return sum + getLeapYearDay(year);
-					  },
-					  getTotalMonthDay = (year, month) => {
-						  return (ct.monthInfo[year - ct.monthInfoDt.getFullYear()] & (0x10000 >> month)) ? 30 : 29;
-					  };
-
-				switch ($.type(dt, true)) {
-					case "date":
-						this._dt.setTime(dt.getTime());
-						break;
-					case "number":
-						this._dt.setTime(dt);
-						break
-				}
-
-				let temp   = 0,
-					leap   = 0,
-					offset = parseInt((this._dt - ct.monthInfoDt) / 86400000),
-					nt     = this._nt,
-					i;
-
-				nt.year = 0;
-				nt.month = 14;
-				nt.day = offset + 40;
-
-				for (i = ct.monthInfoDt.getFullYear(); i < ct.monthInfoDt.getFullYear() + ct.monthInfo.length && offset > 0; i++) {
-					temp = getTotalYearDay(i);
-
-					offset -= temp;
-					nt.month += 12;
-				}
-
-				if (offset < 0) {
-					offset += temp;
-					i--;
-					nt.month -= 12;
-				}
-
-				nt.year = i;
-				this._IsLeapYear = false;
-
-				leap = getLeapYearMonth(i);
-
-				for (i = 1; i < 13 && offset > 0; i++) {
-					if (leap > 0 && i == (leap + 1) && !this._IsLeapYear) {
-						i--;
-						this._IsLeapYear = true;
-						temp = getLeapYearDay(nt.year);
-					}
-					else
-						temp = getTotalMonthDay(nt.year, i);
-
-					if (this._IsLeapYear && i == (leap + 1)) this._IsLeapYear = false;
-
-					offset -= temp;
-
-					if (!this._IsLeapYear) nt.month++;
-				}
-
-				if (offset < 0) {
-					offset += temp;
-
-					i--;
-					nt.month--;
-				}
-				else if (offset == 0 && leap > 0 && i == leap + 1) {
-					if (!this._IsLeapYear) {
-						i--;
-						nt.month--;
-					}
-
-					this._IsLeapYear = !this._IsLeapYear;
-				}
-
-				this._cYear = getTGDZ(nt.year - 1864);
-				this._cMonth = getTGDZ(nt.month);
-				this._cDay = getTGDZ(nt.day);
-
-				nt.month = i;
-				nt.day = offset + 1;
-
-				this._Year = getYear(nt.year);
-				this._Month = getMonth(nt.month, this._IsLeapYear);
-				this._Day = getDay(nt.day);
-				this._Term = getTerm(nt.year, nt.month, this._dt.getDate());
-				this._Zodiac = getZodiac(this._dt.getFullYear());
-
-				return this;
-			}
-
 			toString (fmt) {
 				let result = $.isString(fmt) ? fmt : "Y年(Z) M月 D T";
 
-				if (/((CY|CM|Y|M|D|T|Z)+)/.test(result)) {
+				if (/((CY|CM|CD|CT|CZ|Y|M|D)+)/.test(result)) {
 					fmt = {
 						"CY+": this.cYear,
 						"CM+": this.cMonth,
 						"CD+": this.cDay,
+						"CT+": this.Term,
+						"CZ+": this.Zodiac,
 						"Y+":  this.Year,
 						"M+":  this.Month,
-						"D+":  this.Day,
-						"T+":  this.Term,
-						"Z+":  this.Zodiac
+						"D+":  this.Day
 					};
 
 					$.each(fmt, function (d, k) {
@@ -1799,6 +2184,124 @@
 				return result.trim();
 			}
 
+			getTime () {
+				return this._dt.getTime();
+			}
+
+			setTime (dt) {
+				const getLeapYearMonth = year => {
+					return ct.monthInfo[year - ct.monthInfoDt.getFullYear()] & 0xf;
+				};
+				const getLeapYearDay   = year => {
+					return getLeapYearMonth(year) ? ((ct.monthInfo[year - ct.monthInfoDt.getFullYear()] & 0x10000) ? 30 : 29) : 0;
+				};
+				const getTotalYearDay  = year => {
+					let sum   = 348,
+						minfo = ct.monthInfo[year - ct.monthInfoDt.getFullYear()];
+
+					for (let i = 0x8000; i > 0x8; i >>= 1) sum += (minfo & i) ? 1 : 0;
+
+					return sum + getLeapYearDay(year);
+				};
+				const getTotalMonthDay = (year, month) => {
+					return (ct.monthInfo[year - ct.monthInfoDt.getFullYear()] & (0x10000 >> month)) ? 30 : 29;
+				};
+
+				switch ($.type(dt, true)) {
+					case "date":
+						this._dt.setTime(dt.getTime());
+						break;
+					case "number":
+						this._dt.setTime(dt);
+						break;
+				}
+
+				let nt     = this._nt;
+				let temp   = 0;
+				let offset = parseInt((this._dt - ct.monthInfoDt) / 86400000);
+				let i      = 0;
+
+				nt.year  = 0;
+				nt.month = 14;
+				nt.day   = offset + 40;
+
+				(({monthInfoDt, monthInfo}) => {
+					let len = monthInfoDt.getFullYear() + monthInfo.length;
+
+					for (i = monthInfoDt.getFullYear(); i < len && offset > 0; i++) {
+						temp = getTotalYearDay(i);
+
+						offset -= temp;
+						nt.month += 12;
+					}
+
+					if (offset < 0) {
+						offset += temp;
+						i--;
+						nt.month -= 12;
+					}
+				})(ct);
+
+				nt.year          = i;
+				this._IsLeapYear = false;
+
+				let leap = getLeapYearMonth(nt.year);
+				if (leap < 1) throw "TChinaDate setTime Error";
+
+				this._IsLeapYear = (leap => {
+					let _leap = false;
+
+					for (i = 1; i < 13 && offset > 0; i++) {
+						if (i === leap && !_leap) {
+							i--;
+							_leap = true;
+							temp  = getLeapYearDay(nt.year);
+						}
+						else {
+							temp = getTotalMonthDay(nt.year, i);
+						}
+
+						if (_leap && i === leap) _leap = false;
+
+						offset -= temp;
+
+						if (!_leap) nt.month++;
+					}
+
+					if (offset < 0) {
+						offset += temp;
+
+						i--;
+						nt.month--;
+					}
+					else if (offset === 0 && i === leap) {
+						if (!_leap) {
+							i--;
+							nt.month--;
+						}
+
+						_leap = !_leap;
+					}
+
+					return _leap;
+				})(leap + 1);
+
+				this._cYear  = getTGDZ(nt.year - 1864);
+				this._cMonth = getTGDZ(nt.month);
+				this._cDay   = getTGDZ(nt.day);
+
+				nt.month = i;
+				nt.day   = offset + 1;
+
+				this._Year   = getYear(nt.year);
+				this._Month  = getMonth(nt.month, this._IsLeapYear);
+				this._Day    = getDay(nt.day);
+				this._Term   = getTerm(nt.year, nt.month, this._dt.getDate());
+				this._Zodiac = getZodiac(this._dt.getFullYear());
+
+				return this;
+			}
+
 			static toString (fmt, date = fmt) {
 				if (!$.isDate(date)) date = new Date();
 
@@ -1806,58 +2309,62 @@
 			}
 		}
 
-		$.TChinaDate = TChinaDate;
+		return TChinaDate;
 	})(TObject);
 
 	/*
 	 ====================================
-	 = 类名: TGuid
-	 = 功  能: Guid类
-	 = 对象函数：
-	 =   New          = 获取新Guid
-	 =   toString     = 获取字符串
-	 =   toByteArray  = 获取字节数据
+	 = Name:   TGuid
+	 = Info:   simulate guid
+	 = Extend: TObject
+	 = Static Method:
+	 =   toByteArray  = conver to unit8array
+	 =   New          = get TGuid object with random value
+	 =   Empty        = get TGuid object with fill 0
+	 = Object Method：
+	 =   New          = set random value
+	 =   toString     = conver to string
+	 =   toByteArray  = conver to unit8array
 	 ====================================
 	 */
 	class TGuid extends TObject {
-		constructor (data) {
+		constructor (value) {
 			super();
 
 			this.__className = "TGuid";
 
 			this._value = [0, 0, 0, 0, 0];
-			this._gd = [4, 2, 2, 2, 6];
+			this._gd    = [4, 2, 2, 2, 6];
 
-			switch ($.type(data, true)) {
+			let data = [];
+
+			switch ($.type(value, true)) {
 				case "string":
-					data = data.replace(/^(\{)|(\})$/g, "").split("-");
+					data = value.replace(/^\{|\}$/g, "").split("-");
+					data = data.map(v => parseInt(`0x${v}`));
 					break;
 				case "array":
-					if (data.length === this._gd.length) break;
-				default:
-					data = [];
+					if (data.length === this._gd.length) data = value;
 					break;
 			}
 
 			if (data.length !== this._gd.length) return;
 
-			let fmt = (d, i, t, list) => {
-				switch (t) {
-					case "string":
-						d = "0x" + d;
-						break;
-					case "number":
-						if (!isNaN(d = parseInt(d))) break;
-					default:
-						return false;
-				}
+			for (let i = 0, gd = this._gd, d; i < data.length; i++) {
+				d = data[i];
 
-				if (d < 0 || d >= Math.pow(2, 8 * gd[i])) return false;
+				if (!$.isNumber(d, {min: 0, max: (2 ** (8 * gd[i])) - 1})) return;
+				data[i] = d;
+			}
 
-				list[i] = d;
-			};
+			this._value = data;
+		}
 
-			if ($.each(data, fmt)) this._value = data;
+		free () {
+			this._value = null;
+			this._gd    = null;
+
+			super.free();
 		}
 
 		valueOf () {
@@ -1865,42 +2372,52 @@
 		}
 
 		toString () {
-			const com   = (s, l) => {
-					  while (s.length < l * 2) s = "0" + s;
+			const com  = (s, l) => {
+				while (s.length < l * 2) s = "0" + s;
 
-					  return s;
-				  },
-				  value = this._value,
-				  gd    = this._gd;
+				return s;
+			};
+			const data = this._value;
+			const gd   = this._gd;
 
 			let result = [];
 
-			for (let i = 0; i < value.length; i++) result.push(com(value[i].toString(16), gd[i]));
+			for (let i = 0, d; i < data.length; i++) {
+				d = data[i].toString(16);
+				d = com(d, gd[i]);
+				result.push(d);
+			}
 
 			return result.join("-");
 		}
 
 		toByteArray () {
-			const des   = (r, d) => {
-					  d.reverse();
-					  for (let i = 0; i < d.length; i++) if (d[i].length > 0) r.push(parseInt("0x" + d[i]));
-				  },
-				  value = this._value;
+			const des  = (r, d) => {
+				d.reverse();
+				for (let i = 0; i < d.length; i++) if (d[i].length > 0) r.push(parseInt("0x" + d[i]));
+			};
+			const data = this._value;
 
 			let result = [];
 
-			for (let i = 0; i < value.length; i++) des(result, value[i].toString(16).split(/(\w{2})/g));
+			for (let i = 0, d; i < data.length; i++) {
+				d = data[i].toString(16);
+
+				des(result, d.split(/\w{2}/g));
+			}
 
 			return result;
 		}
 
 		New () {
-			const rmd = l => Math.round(Math.random() * (Math.pow(2, 8 * l) - 1)),
-				  gd  = this._gd;
+			const rmd = l => Math.round(Math.random() * ((2 ** (8 * l)) - 1));
+			const gd  = this._gd;
 
 			let result = [];
 
 			for (let i = 0; i < gd.length; i++) result.push(rmd(gd[i]));
+
+			this._value = result;
 
 			return this;
 		}
@@ -1916,39 +2433,57 @@
 		static New () {
 			return (new TGuid()).New();
 		}
+
+		static Empty () {
+			return (new TGuid());
+		}
 	}
 
-	$.TObject = TObject;
-	$.TCache = TCache;
-	$.TGuid = TGuid;
+	const api = {
+		TObject,
+		TSeal,
+		TCache,
+		TList,
+		TChinaDate,
+		TGuid,
+		/**
+		 * 队列函数
+		 *
+		 * @param {string} [type=*] 限定类型，对输入内容进行过滤
+		 * @returns {object}
+		 */
+		List (type) {
+			return new $.TList(type);
+		},
+		/**
+		 * 中文日期函数
+		 *
+		 * @param {date} [dt=now]
+		 * @returns {object}
+		 */
+		ChinaDate (dt) {
+			return new $.TChinaDate(dt);
+		},
+		/**
+		 * New Guid
+		 *
+		 * @returns {object}
+		 */
+		NewGuid () {
+			return $.TGuid.New();
+		},
+		/**
+		 * Empty Guid
+		 *
+		 * @returns {object}
+		 */
+		EmptyGuid () {
+			return $.TGuid.Empty();
+		}
+	};
 
-	/**
-	 * 队列函数
-	 *
-	 * @param {string} [type=*] 限定类型，对输入内容进行过滤
-	 * @returns {object}
-	 */
-	$.List = type => (new $.TList(type));
-	/**
-	 * 中文日期函数
-	 *
-	 * @param {date} [dt=now]
-	 * @returns {object}
-	 */
-	$.ChinaDate = dt => (new $.TChinaDate(dt));
-	/**
-	 * New Guid
-	 *
-	 * @returns {object}
-	 */
-	$.NewGuid = () => (new $.TGuid()).New();
-	/**
-	 * Empty Guid
-	 *
-	 * @returns {object}
-	 */
-	$.EmptyGuid = () => (new $.TGuid());
-})(this);
+	jShow = {...owner, ...api};
+})(jShow);
 /**
  * ==========================================
  * Name:           jShow's Async Extensions
@@ -1957,270 +2492,293 @@
  * Description:    Async Extensions
  * Log:
  * 2019-02-20    Init Async
+ * 2019-05-19    Format Code to jShow Style Guide
  * ==========================================
  */
-($ => {
+(owner => {
+	const $ = global.jShow;
+
 	/*
 	 ====================================
-	 = 类名: TCallback
-	 = 功  能: 回调类
-	 = 对象函数：
-	 =   lock        = 锁定状态
-	 =   unlock      = 去除锁定
-	 =   add         = 添加函数
-	 =   del         = 删除指定函数
-	 =   fire        = 触发调用
-	 =   fireWith    = 触发调用,改变this指向
-	 =   empty       = 清空回调列表
-	 =   unique      = 去除重复函数
-	 =   has         = 检测是否存在指定函数
+	 = Name: TCallback
+	 = Info: callback class
+	 = Object Method：
+	 =   lock        = lock call function
+	 =   unlock      = unlock call function
+	 =   on          = add function
+	 =   off         = remove function by function
+	 =   fire        = call function
+	 =   fireWith    = call function, change this object
+	 =   empty       = clear function
+	 =   unique      = unique function
+	 =   has         = exist check function by list
+	 = Object Property:
+	 =   limit       = function list limit
+	 =   length      = function list length
+	 =   locked      = lock status
 	 ====================================
 	 */
-	class TCallback extends TObject {
-		constructor (opt, limit, callback) {
-			super();
+	const TCallback = (function (TObject) {
+		const getFuncs  = (list, callback) => {
+			$.each(list, (d, k, t) => {
+				switch (t) {
+					case "function":
+						callback(d);
+						break;
+					case "array":
+						if (d.length > 0) getFuncs(d, callback);
+						break;
+				}
+			}, true);
+		};
+		const eachFuncs = (list, callback) => {
+			let i = 0;
 
-			this.__className = "TCallback";
+			while (i < list.length) {
+				if (callback(i, list[i]) !== false) i++;
+			}
+		};
+		const fireFuncs = (list, data, once, done, prog) => {
+			if (list.length < 1) return done;
 
-			this._locked = false;
-			this._limit = limit;
-			this._length = 0;
+			eachFuncs(list, (i, f) => {
+				f.apply(data[0], data[1]);
 
-			this.__func = [];
-			this.__arg = null;
-			this.__opt = opt;
-			this.__callback = callback || null;
-
-			const getFuncs  = (list, callback) => {
-					  $.each(list, (d, k, t) => {
-						  switch (t) {
-							  case "function":
-								  callback(d);
-								  break;
-							  case "array":
-								  if (d.length > 0) getFuncs(d, callback);
-								  break;
-						  }
-					  }, true);
-				  },
-				  eachFuncs = (list, callback) => {
-					  let i = 0;
-
-					  while (i < list.length) {
-						  if (callback(i, list[i]) !== false) i++;
-					  }
-				  },
-				  fireFuncs = (list, data, once, done, prog) => {
-					  if (list.length < 1) return done;
-
-					  eachFuncs(list, (i, f) => {
-						  f.apply(data[0], data[1]);
-
-						  if (once) list.splice(i, 1);
-						  if (prog) prog();
-						  if (once) return false;
-					  });
-
-					  if (done) done();
-
-					  return null
-				  };
-
-			this.__getFuncs = getFuncs;
-			this.__eachFuncs = eachFuncs;
-			this.__fireFuncs = fireFuncs;
-		}
-
-		get limit () {
-			return this._limit;
-		}
-
-		get length () {
-			return this._length;
-		}
-
-		get locked () {
-			return this._locked;
-		}
-
-		lock () {
-			return this._locked = true;
-		}
-
-		unlock () {
-			return this._locked = false;
-		}
-
-		on () {
-			if (this.locked) return this;
-
-			let opt  = this.__opt,
-				func = this.__func,
-				arg  = this.__arg;
-
-			this.__getFuncs(arguments, d => {
-				func.push(d);
-				if (func.length > this.__limit) func.pop();
+				if (once) list.splice(i, 1);
+				if (prog) prog();
+				if (once) return false;
 			});
-			this._length = func.length;
 
-			if (opt.unique) this.unique();
-			if (opt.memory && opt.fire && arg) this.__fireFuncs(func, arg, opt.once, this.__callback, d => this._length = func.length);
+			if (done) done();
 
-			return this;
-		}
+			return null;
+		};
 
-		off () {
-			if (this.locked) return this;
+		class TCallback extends TObject {
+			constructor (opt, limit, callback) {
+				super();
 
-			let _this = this,
-				func  = this.__func;
+				this.__className = "TCallback";
 
-			if (arguments.length == 0) func = this.__func = [];
-			else {
-				_this.__getFuncs(arguments, d => {
-					_this.__eachFuncs(func, (i, f) => {
-						if (Object.is(d, f)) {
-							func.splice(i, 1);
-							return false;
-						}
-					})
+				this._locked = false;
+				this._limit  = limit;
+				this._value  = [];
+				this._arg    = null;
+
+				this._opt      = opt;
+				this._callback = $.isFunction(callback) ? callback : null;
+			}
+
+			valueOf () {
+				return this._value;
+			}
+
+			get limit () {
+				return this._limit;
+			}
+
+			get length () {
+				return this._value.length;
+			}
+
+			get locked () {
+				return this._locked;
+			}
+
+			lock () {
+				return this._locked = true;
+			}
+
+			unlock () {
+				return this._locked = false;
+			}
+
+			on (...func) {
+				if (this.locked) return this;
+
+				const opt   = this._opt;
+				const data  = this._value;
+				const arg   = this._arg;
+				const limit = this._limit;
+
+				getFuncs(func, d => {
+					data.push(d);
+					if (data.length > limit) data.pop();
 				});
+
+				if (opt.unique) this.unique();
+				if (opt.memory && opt.fire && arg) fireFuncs(data, arg, opt.once, this._callback);
+
+				return this;
 			}
 
-			this._length = func.length;
+			off (...func) {
+				if (this.locked) return this;
 
-			return this;
-		}
+				const data = this._value;
 
-		has (func) {
-			return this.__func.indexOf(func) !== -1;
-		}
+				if (func.length < 1) {
+					this._value = [];
+				}
+				else {
+					getFuncs(func, d => {
+						eachFuncs(data, (i, f) => {
+							if (Object.is(d, f)) {
+								data.splice(i, 1);
+								return false;
+							}
+						});
+					});
+				}
 
-		unique () {
-			if (!this._locked) {
-				this._length = (this.__func = Array.from(new Set(this.__func))).length;
+				return this;
 			}
 
-			return this;
-		}
-
-		fire () {
-			return this.fireWith(this, arguments);
-		}
-
-		fireWith (own, args, done) {
-			if (arguments.length < 2) args = [];
-			if (arguments.length < 1) own = this;
-
-			let opt = this.__opt,
-				arg;
-
-			this.__arg = arg = [own, args.slice ? args.slice() : args];
-			if (opt.memory && !opt.fire) {
-				opt.fire = true;
-				if (opt.limit) this.__arg = null;
-			}
-			else {
-				let func = this.__func;
-
-				this.__fireFuncs(func, arg, opt.once, done, d => this.length = func.length);
-				if (this.__callback) this.__callback.apply(arg[0], arg[1]);
+			has (func) {
+				return this._value.indexOf(func) !== -1;
 			}
 
-			return this;
+			unique () {
+				if (this.locked) return this;
+
+				this._value = $.unique(this._value);
+
+				return this;
+			}
+
+			fire (...args) {
+				return this.fireWith(this, args);
+			}
+
+			fireWith (own = this, args = [], done) {
+				const arg = [own, $.isArray(args) ? args : []];
+				const opt = this._opt;
+
+				this._arg = arg;
+
+				if (opt.memory && !opt.fire) {
+					opt.fire = true;
+					if (opt.limit) this._arg = null;
+				}
+				else {
+					let data = this._value;
+
+					fireFuncs(data, arg, opt.once, done);
+					if (this._callback) this._callback.apply(arg[0], arg[1]);
+				}
+
+				return this;
+			}
 		}
-	}
+
+		return TCallback;
+	})(TObject);
 
 	/*
 	 ====================================
-	 = 类名: TDeferred
-	 = 功  能: 异步类(观察者模式)
-	 = 对象函数：
-	 =   empty       = 清空回调列表
-	 =   promise     = 操作对象
-	 =   resolve     = 触发成功
-	 =   reject      = 触发失败
-	 =   alarm       = 触发警告
-	 =   notify      = 触发进度
-	 =   on          = 绑定事件
-	 =   off         = 解除绑定
-	 = 对象事件:
-	 =   done        = 成功
-	 =   fail        = 失败
-	 =   warn        = 警告
-	 =   progress    = 进度
-	 =   always      = 结束
+	 = Name: TDeferred
+	 = Info: Async class (Observer Mode)
+	 = Static Method:
+	 =   create      = static create function
+	 = Object Method：
+	 =   empty       = clear bind function
+	 =   promise     = return promise object
+	 =   resolve     = call done event
+	 =   reject      = call fail event
+	 =   alarm       = call warn event
+	 =   notify      = call progress event
+	 =   on          = bind function by key
+	 =   off         = unbind function by key
+	 = Object Event:
+	 =   done        = done evnet, only once call
+	 =   fail        = fail event, only once call
+	 =   warn        = warn event
+	 =   progress    = progress event
+	 =   always      = always event, after done/fail event
 	 ====================================
 	 */
 	class TDeferred extends TObject {
 		constructor (limit, callback) {
 			super();
 
-			let _this  = this,
-				_state = _this.STATE,
-				_event = _this.__event = {
-					done:     $.Callback(limit).fire(),
-					fail:     $.Callback(limit).fire(),
-					warn:     $.Callback(limit).fire(),
-					progress: $.Callback(limit).fire(),
-					always:   $.Callback(limit, callback).fire()
+			let _this    = this;
+			let _state   = _this.STATE;
+			let _event   = {
+				done:     $.Callback(limit).fire(),
+				fail:     $.Callback(limit).fire(),
+				warn:     $.Callback(limit).fire(),
+				progress: $.Callback(limit).fire(),
+				always:   $.Callback(limit, callback).fire()
+			};
+			let _action  = {
+				resolve: _event.done,
+				reject:  _event.fail,
+				alarm:   _event.warn,
+				notify:  _event.progress
+			};
+			let _promise = {
+				get state () {
+					return _this._state;
 				},
-				_action = _this.__action = {
-					resolve: _event.done,
-					reject:  _event.fail,
-					alarm:   _event.warn,
-					notify:  _event.progress
+				on:      function () {
+					_this.on.apply(_this, arguments);
+					return this;
 				},
-				_promise = _this.__promise = {
-					state:   _state.inited,
-					on:      function () {
-						_this.on.apply(_this, arguments);
-						return this;
-					},
-					off:     function () {
-						_this.off.apply(_this, arguments);
-						return this;
-					},
-					promise: function () { return _this.promise.apply(_this, arguments); }
-				};
+				off:     function () {
+					_this.off.apply(_this, arguments);
+					return this;
+				},
+				promise: function () { return _this.promise.apply(_this, arguments); }
+			};
 
-			_this._state = _state.pending;
+			_this.__event   = _event;
+			_this.__action  = _action;
+			_this.__promise = _promise;
+
+			_this._state  = _state.pending;
 			_this.__owner = void(0);
-			_this.__surp = 0;
+			_this.__surp  = 0;
 
 			_event.done.on(e => {
-				_this.__promise.state = _this._state = _state.resolved;
+				_this._state = _state.resolved;
+
 				_event.fail.lock();
 				_event.warn.lock();
 				_event.progress.lock();
 			});
 			_event.fail.on(e => {
-				_this.__promise.state = _this._state = _state.rejected;
+				_this._state = _state.rejected;
+
 				_event.done.lock();
 				_event.warn.lock();
 				_event.progress.lock();
 			});
 
 			$.each(_event, (d, k) => {
-				_promise[k] = _this[k] = function () {
-					d.on(Array.from(arguments));
+				_this[k]    = function () {
+					d.on([...arguments]);
 					return this;
 				};
+				_promise[k] = _this[k];
 			});
 
 			$.each(_action, (d, k) => {
-				_this[k] = function () {
-					_this[k + "With"](_this, arguments);
+				_this[k]          = function () {
+					_this[`${k}With`](_this, arguments);
 
 					return this;
 				};
-				_this[k + "With"] = function (own, arg) {
+				_this[`${k}With`] = function (own, arg) {
 					own = own || _this.__owner;
 					d.fireWith(own, arg);
 
-					if (_this.state == k) _event.always.fireWith(own, arg);
-					else if (k == "notify" && --_this.__surp < 1) _this["resolveWith"](own, arg);
+					if (_this.state === k) {
+						_event.always.fireWith(own, arg);
+					}
+					else if (k === "notify") {
+						_this.__surp -= 1;
+						if (_this.__surp < 1) _this["resolveWith"](own, arg);
+					}
 
 					return this;
 				};
@@ -2247,50 +2805,72 @@
 		}
 
 		off (tag) {
-			if (arguments.length == 0) $.each(this.__event, d => d.off());
+			if (arguments.length === 0) $.each(this.__event, d => d.off());
 			else if (this.__event[tag]) this.__event[tag].off();
 
 			return this;
 		}
 
-		promise (own, max) {
+		promise (own, max = own) {
 			const STATE = this.STATE;
 
 			switch (this.state) {
 				case STATE.inited:
 				case STATE.pending:
-					this.__promise.state = this._state = STATE.pending;
-
-					if (arguments.length == 1 && $.isNumber(own)) max = own;
-					max = $.isNumber(max, {min: 0}) ? max : this.__surp;
+					this._state = STATE.pending;
 
 					this.__owner = own === null ? void(0) : own;
-					this.__surp = max > 0 ? max : 0;
+					this.__surp  = $.isNumber(max, {min: 0}) ? max : 0;
 					break;
 			}
 
 			return this.__promise;
 		}
+
+		static create (limit, callback) {
+			return (new TDeferred(limit, callback));
+		}
 	}
 
-	/**
-	 * 异步链式对象,扩展Promise对象
-	 *
+	/*
+	 ====================================
+	 = Name: TPromise
+	 = Info: Async object, extension Promise object
+	 = Static Method:
+	 =   create      = static create function
+	 = Object Method：
+	 =   empty       = clear bind function
+	 =   promise     = return promise object
+	 =   resolve     = call done event
+	 =   reject      = call fail event
+	 =   alarm       = call warn event
+	 =   notify      = call progress event
+	 =   on          = bind function by key
+	 =   off         = unbind function by key
+	 = Object Event:
+	 =   done        = done evnet, only once call
+	 =   fail        = fail event, only once call
+	 =   warn        = warn event
+	 =   progress    = progress event
+	 =   always      = always event, after done/fail event
+	 ====================================
 	 */
-	(Promise => {
+	const TPromise = (Promise => {
 		let prop = Promise.prototype;
 
-		prop.end = function (onFulfilled, onRejected) {
+		prop.end      = function (onFulfilled, onRejected) {
 			this.then(onFulfilled, onRejected)
 				.catch(function (reason) {
 					// 抛出一个全局错误
-					setTimeout(() => { throw reason }, 0);
+					setTimeout(() => { throw reason; }, 0);
 				});
 		};
-		prop.on = function (tag, callback) {
+		prop.on       = function (tag, callback) {
+			if (!$.isFunction(callback, true)) return this;
+
 			switch (tag) {
-				case "done":
 				default:
+				case "done":
 					return this.then(callback);
 				case "fail":
 					return this.catch(callback);
@@ -2299,81 +2879,72 @@
 
 					return this.then(
 						value => P.resolve(callback()).then(() => value),
-						reason => P.resolve(callback()).then(() => { throw reason })
+						reason => P.resolve(callback()).then(() => { throw reason; })
 					);
 				case "warn":
-					if (this.__simple) this.__warn.on(callback);
+					if (!this.__simple) this.__warn.on(callback);
 
 					return this;
 				case "progress":
-					if (this.__simple) this.__progress.on(callback);
+					if (!this.__simple) this.__progress.on(callback);
 
 					return this;
 			}
 		};
-		prop.done = function (callback) { return this.on("done", callback); };
-		prop.fail = function (callback) { return this.on("fail", callback); };
-		prop.always = prop.finally = function (callback) { return this.on("always", callback); };
-		prop.warn = function (callback) { return this.on("warn", callback); };
+		prop.done     = function (callback) { return this.on("done", callback); };
+		prop.fail     = function (callback) { return this.on("fail", callback); };
+		prop.always   = function (callback) { return this.on("always", callback); };
+		prop.warn     = function (callback) { return this.on("warn", callback); };
 		prop.progress = function (callback) { return this.on("progress", callback); };
-		prop.resolve = function () {
-			let arg = Array.prototype.push.apply([], arguments);
-
-			this.__resolve.call(this, arg.length === 1 ? arg[0] : arg);
+		prop.resolve  = function (arg) {
+			this.__resolve.call(this, arg);
 
 			return this;
 		};
-		prop.reject = function () {
-			let arg = Array.prototype.push.apply([], arguments);
-
-			this.__reject.call(this, arg.length === 1 ? arg[0] : arg);
+		prop.reject   = function (arg) {
+			this.__reject.call(this, arg);
 
 			return this;
 		};
-		prop.alarm = function () {
-			let arg = Array.prototype.push.apply([], arguments);
-
-			this.__warn.fireWith(this, arg.length === 1 ? arg[0] : arg);
+		prop.alarm    = function (arg) {
+			this.__warn.fireWith(this, arg);
 
 			return this;
 		};
-		prop.notify = function () {
-			let arg = Array.prototype.push.apply([], arguments);
+		prop.notify   = function (arg) {
+			if (this.__simple) return this;
 
-			if (this.__simple) {
-				if (this.__limit > 0) {
-					arg = arg.length === 1 ? arg[0] : arg;
-					this.__progress.fireWith(this, arg);
+			if (this.__limit > 0) {
+				this.__progress.fireWith(this, arg);
 
-					if (--this.__limit < 1) {
-						this.__simple = false;
-						this.__resolve.call(this, arg);
-					}
-				}
+				this.__limit -= 1;
+				if (this.__limit < 1) this.__resolve.call(this, arg);
 			}
 
 			return this;
 		};
-		prop.promise = function (max) {
-			if (this.__simple && $.isNumber(max, {min: 1})) this.__limit = max;
-			else this.__simple = false;
+		prop.promise  = function (max) {
+			if ($.isNumber(max, {min: 1})) this.__limit = max;
 
 			return this;
 		};
 
 		Promise.create = function (simple, callback) {
-			let obj, done, fail;
+			let done;
+			let fail;
 
-			obj = new Promise(function (resolve, reject) {
+			let obj = new Promise(function (resolve, reject) {
 				done = resolve;
 				fail = reject;
 			});
-			obj.__resolve = done;
-			obj.__reject = fail;
 
+			obj.__resolve = done;
+			obj.__reject  = fail;
+
+			obj.__limit  = 0;
 			obj.__simple = simple === true;
-			if (obj.__simple) {
-				obj.__warn = $.Callback(100).fire();
+			if (!obj.__simple) {
+				obj.__warn     = $.Callback(100).fire();
 				obj.__progress = $.Callback(100).fire();
 			}
 
@@ -2386,146 +2957,177 @@
 		return Promise;
 	})(Promise);
 
-	/**
-	 * 回调对象
-	 *
-	 * @param {string} [flag=once memory limit] 工作模式
-	 * @param {number} [limit=50] 回调列表数量
-	 * @param {function} callback 结束回调
-	 * @returns {object}
-	 */
-	$.Callback = function (flag, limit, callback) {
-		switch (arguments.length) {
-			case 1:
-				switch (typeof(flag)) {
-					case "number":
-						limit = flag;
-						break;
-					case "function":
-						callback = flag;
-						break;
-				}
-				break;
-			case 2:
-				if ($.isFunction(limit)) callback = limit;
-				if ($.isNumber(flag)) limit = flag;
-				break;
+	const api = {
+		TCallback,
+		TDeferred,
+		TPromise,
+		/**
+		 * Create TCallback object
+		 *
+		 * @param {object} opt <option>
+		 *    @param {string} [opt.flag=once memory limit] <work mode>
+		 *    @param {number} [opt.limit=50] <callback list limit>
+		 *    @param {function} opt.callback <callback list after function>
+		 * @returns {object}
+		 */
+		Callback (opt) {
+			let {
+					flag  = "once memory limit",
+					limit = 50,
+					callback
+				} = opt;
+
+			switch (typeof(opt)) {
+				case "number":
+					limit = opt;
+					break;
+				case "string":
+					flag = opt;
+					break;
+				case "function":
+					callback = opt;
+					break;
+			}
+
+			if (!$.isNumber(limit, {min: 1})) limit = 50;
+			if (!$.isFunction(callback)) callback = null;
+
+			let arg = {};
+			flag.split(" ").forEach(d => arg[d] = true);
+
+			if (arg.memory && !arg.limit) arg.fire = true;
+
+			return new TCallback(
+				{
+					once:   arg.once === true,
+					memory: arg.memory === true,
+					limit:  arg.limit === true,
+					unique: arg.unique === true,
+					fire:   arg.fire === true
+				},
+				arg.simple === true ? 1 : parseInt(limit),
+				callback
+			);
+		},
+		/**
+		 * Create Async observer object
+		 *
+		 * @WARN: opt type is number as TDeferred
+		 *
+		 * @param {boolean|number|object} opt <option>
+		 *    @param {boolean} [opt=true] <is simple mode>
+		 *    @param {number} [opt=50] <callback list limit>
+		 * @param {function} [callback] <callback list after function>
+		 * @returns {object}
+		 */
+		Deferred (opt, callback = opt) {
+			let func = callback;
+
+			if (!$.isFunction(func)) func = null;
+
+			switch (typeof(opt)) {
+				default:
+				case "boolean":
+					return Promise.create(opt === true, func);
+				case "number":
+					let num = Number(opt);
+
+					if (isNaN(num) || num < 1) num = 50;
+
+					return TDeferred.create(num, func);
+			}
+		},
+		/**
+		 * Create Async object, extension Promise object
+		 *
+		 */
+		Promise (callback) {
+			return Promise.create(callback);
+		},
+		/**
+		 * Generator function to Promise object
+		 *
+		 * @param {Generator} gen <function body, must generator function>
+		 * @param {object} [opt] <option>
+		 *    @param {*} [opt.data] <transmit data>
+		 *    @param {*} [opt.owner] <transmit owner>
+		 * @returns {object}
+		 */
+		Async (gen, opt) {
+			if (!$.isGenerator(gen)) throw new Error("callback is not Generator");
+
+			let {
+					data  = null,
+					owner = null
+				} = opt;
+
+			if ($.isNull(data)) data = [];
+			if (!$.isArray(data)) data = [data];
+			if (!$.isObject(owner)) owner = null;
+
+			const isFunc    = $.isFunction;
+			const isPromise = $.isPromise;
+			const isGen     = $.isGenerator;
+			const toPromise = function (gen, data, owner, first) {
+				if (isPromise(gen)) return gen;
+
+				return new Promise(function (resolve, reject) {
+					const step = err => {
+						let method = err ? "throw" : "next";
+
+						return (arg, rev) => {
+							try {
+								rev = gen[method](arg);
+							}
+							catch (e) {
+								return reject(e);
+							}
+
+							next(rev);
+						};
+					};
+					const then = (own, ok, fail) => own.then(ok || step(), fail || step(1));
+					const next = rev => {
+						if (rev.done) return resolve(rev.value);
+
+						rev = rev.value;
+
+						then(toPromise(rev, [], owner));
+					};
+
+					if (isGen(gen) || (first && isFunc(gen))) gen = gen.apply(owner, data);
+
+					if (isPromise(gen)) gen.then(resolve, reject);
+					else if (!isGen(gen, true)) resolve(gen);
+					else step()();
+				});
+			};
+
+			return toPromise(gen, data, owner, true);
+		},
+		/**
+		 * Normal function to async function
+		 *
+		 * @WARN: async function as done status output
+		 *
+		 * @param {function} callback <normal function>
+		 * @returns {Promise<*>}
+		 */
+		async Done (callback) {
+			const dtd = Promise.create();
+
+			let func = callback;
+
+			if ($.isFunction(func)) func = Promise.create(func);
+
+			func.always(() => dtd.resolve());
+
+			return dtd.promise();
 		}
-		if (!$.isString(flag)) flag = "once memory limit";
-		limit = $.isNumber(limit, {min: 1}) ? limit : 50;
-		if (!$.isFunction(callback)) callback = null;
-
-		let opt = {};
-
-		flag.split(" ").forEach(d => opt[d] = true);
-
-		if (opt.memory && !opt.limit) opt.fire = true;
-
-		return new TCallback(
-			{
-				once:   opt.once === true,
-				memory: opt.memory === true,
-				limit:  opt.limit === true,
-				unique: opt.unique === true,
-				fire:   opt.fire === true
-			},
-			opt.simple === true ? 1 : parseInt(limit),
-			callback);
 	};
 
-	/**
-	 * 异步观察者对象
-	 *
-	 * @param {boolean} [simple=false] 是否用简单模式
-	 * @param {function} [callback] 结束回调
-	 * @returns {object}
-	 */
-	$.Deferred = function (simple, callback) {
-		if (arguments.length == 1) callback = simple;
-
-		if (!$.isFunction(callback)) callback = null;
-
-		if (simple === true) return Promise.create(true, callback);
-		else return (new TDeferred($.isNumber(simple, {min: 1}) ? simple : 50, callback));
-	};
-
-	/**
-	 * 异步链式对象,扩展Promise对象
-	 *
-	 */
-	$.Promise = callback => Promise.create(callback);
-
-	/**
-	 * Generator函数转Promise对象
-	 *
-	 * @param {Generator} gen 函数主体，必须是Generator函数
-	 * @param {*} [data] 带入参数
-	 * @param {*} [owner] 带入所有者
-	 * @returns {object}
-	 */
-	$.Async = function (gen, data, owner) {
-		if (!$.isGenerator(gen)) throw new Error("callback is not Generator");
-
-		if ($.isNull(data)) data = [];
-		else if (!$.isArray(data)) data = [data];
-		if (!$.isObject(owner)) owner = null;
-
-		const isFunc    = $.isFunction,
-			  isPromise = $.isPromise,
-			  isGen     = $.isGenerator,
-			  toPromise = function (gen, data, owner, first) {
-				  if (isPromise(gen)) return gen;
-
-				  return new Promise(function (resolve, reject) {
-					  const step = err => {
-								let method = err ? "throw" : "next";
-
-								return (arg, rev) => {
-									try {
-										rev = gen[method](arg);
-									}
-									catch (e) {
-										return reject(e);
-									}
-
-									next(rev);
-								};
-							},
-							then = (own, ok, fail) => own.then(ok || step(), fail || step(1)),
-							next = rev => {
-								if (rev.done) return resolve(rev.value);
-								rev = rev.value;
-
-								then(toPromise(rev, [], owner));
-							};
-
-					  if (isGen(gen) || (first && isFunc(gen))) gen = gen.apply(owner, data);
-
-					  if (isPromise(gen)) gen.then(resolve, reject);
-					  else if (!isGen(gen, true)) resolve(gen);
-					  else step()();
-				  });
-			  };
-
-		return toPromise(gen, data, owner, true);
-	};
-
-	/**
-	 * 普通函数转Promise对象
-	 * @param {function} func 普通函数
-	 * @returns {Promise<*>}
-	 * @constructor
-	 */
-	$.Done = async function (func) {
-		const dtd = Promise.create();
-
-		if ($.isFunction(func)) func = Promise.create(func);
-
-		func.always(() => dtd.resolve());
-
-		return dtd.promise();
-	};
-})(this);
+	jShow = {...owner, ...api};
+})(jShow);
 /**
  * ==========================================
  * Name:           jShow's Load Module
@@ -2539,520 +3141,675 @@
  * 2016-11-24    基于ES6改写
  * 2017-02-10    去除函数默认参数,增加适配
  * 2019-03-14    Init Class
+ * 2019-05-20    Format Code to jShow Style Guide
+ * 2019-05-25    增加AMD识别方式，同时兼容CMD/AMD
  * ==========================================
  */
-($ => {
+(owner => {
+	const $ = global.jShow;
+
 	if ($.mode === $.MODE.Node) return;
 
-	const metaState = {
-			  Error:     -1,
-			  Ready:     0,
-			  Loading:   1,
-			  Define:    2,
-			  Loaded:    3,
-			  Executing: 4,
-			  Done:      5
-		  },
-		  fileType  = {
-			  JS:   1,
-			  CSS:  2,
-			  JSON: 3
-		  },
-		  codeType  = {
-			  None:     0,
-			  Object:   1,
-			  Function: 2,
-			  Value:    3
-		  },
-		  modeules  = {},
-		  config    = {
-			  delay: true,
-			  deps:  [],
-			  libs:  {},
-			  root:  "/",
-			  incs:  "./inc/jBD/",
-			  user:  "./usr/"
-		  };
+	const loadMode = {
+		CMD: "CMD",
+		AMD: "AMD"
+	};
+	const fileType = {
+		JS:   1,
+		CSS:  2,
+		JSON: 3
+	};
+	const modules  = {};
+	const config   = {
+		mode:  loadMode.AMD,
+		delay: true,
+		deps:  [],
+		libs:  {},
+		root:  "/",
+		incs:  "./inc/jBD/",
+		user:  "./usr/"
+	};
 
-	let TModule = (function (CFG, MOD) {
+	const TModule = (function (CFG, MOD) {
+		const metaState = {
+			Error:     -1,
+			Ready:     0,
+			Loading:   1,
+			Define:    2,
+			Loaded:    3,
+			Executing: 4,
+			Done:      5
+		};
+		const codeType  = {
+			None:     0,
+			Object:   1,
+			Function: 2,
+			Value:    3
+		};
+
+		//因为作用域问题，必须使用var进行定义
 		var lastMeta = null;
 
-		const errorMsg     = function () { throw new Error(console.error("[CMD] ", Array.from(arguments).join(" "))); },
-			  parseHref    = (url, path) => {
-				  let local = window.location;
+		const errorMsg     = (...arg) => {
+			throw new Error(console.error(`[${CFG.mode}] ${arg.join(" ")}`));
+		};
+		const parseHref    = (url, path) => {
+			let _url = url.replace(/\\/g, "/").replace(/^\/+/, "").replace(/\/+$/, "").replace(/\/\.\//g, "/");
 
-				  url = url.replace(/\\/g, "/").replace(/^\/+/, "").replace(/\/+$/, "").replace(/\/\.\//g, "/");
+			if (/^http[s]?:\/\//.test(_url)) return _url;
 
-				  if (/^http[s]?:\/\//.test(url)) return url;
+			let local = window.location;
+			let _path = path || `${local.protocol}//${local.host}/`;
 
-				  if (!path) path = local.protocol + "//" + local.host + "/";
-				  if (!url) url += "/";
+			_path += _url || `${_url}/`;
+			_path = _path.replace(/\/\.\//g, "/").replace(/([^:\/])\/+\//g, "$1/");
 
-				  return (path + url).replace(/\/\.\//g, "/").replace(/([^:\/])\/+\//g, "$1/");
-			  },
-			  parseRealUrl = (url, path, ext) => {
-				  if (!url || !(url = url.replace(/\\/g, "/"))) return "";
-				  if (/^http[s]?:\/\//.test(url)) return url;
+			return _path;
+		};
+		const parseRealUrl = (url, path, ext) => {
+			let _url = url.replace(/\\/g, "/");
 
-				  let DOUBLE_DOT_RE = /\/[^/]+\/\.\.\//,
-					  SINGLE_DOT_RE = /([^/])\/[^/]+\//;
+			if (!_url) return "";
+			if (/^http[s]?:\/\//.test(_url)) return _url;
 
-				  if (url[0] == "/") {
-					  if (!/^http[s]?:\/\//.test(path)) path = "";
-					  else {
-						  while (path.match(SINGLE_DOT_RE)) path = path.replace(SINGLE_DOT_RE, "$1/");
-						  path = path.substr(0, path.length - 1);
-					  }
-				  }
+			const DOUBLE_DOT_RE = /\/[^/]+\/\.\.\//;
+			const SINGLE_DOT_RE = /([^/])\/[^/]+\//;
 
-				  url = path + url;
-				  url = url.replace(/\/\.\//g, "/").replace(/^(http[s]?:\/\/[\w\.-]+(?:\:[\d]+)*?)\//, "$1/").replace(/([^:\/])\/+\//g, "$1/");
-				  while (url.match(DOUBLE_DOT_RE)) url = url.replace(DOUBLE_DOT_RE, "/");
+			let _path = path;
 
-				  if (ext && !/(?:\.[A-Za-z]+|\?[^\?\.\/]*)$/.test(url)) url += "." + ext;
-
-				  return url.replace(/^\//, "");
-			  },
-			  loadEvent    = (state, meta) => {
-				  const error = e => errorMsg("load event", "url:" + meta.url, "msg:" + e.message),
-						done  = e => {
-							if (lastMeta) {
-								meta.state = lastMeta.state;
-								if (meta.state == metaState.Error) errorMsg("factory null");
-
-								meta.type[2] = lastMeta.type;
-								meta.alias = $.unique(meta.alias.concat(lastMeta.alias));
-								meta.deps = $.unique(meta.deps.concat(lastMeta.deps));
-
-								meta.node = meta.node.remove() && null;
-								meta.module.factory = lastMeta.factory;
-								meta.exec = lastMeta.exec;
-
-								((meta, module) => {
-									if (meta.deps.length < 1) module.done();
-									else {
-										const sd = () => {
-												  meta.surs--;
-												  module.done();
-											  },
-											  df = d => module.require(d, sd);
-
-										meta.surs = meta.deps.length;
-										meta.deps.forEach(df);
-									}
-								})(meta, meta.module);
-
-								lastMeta = null;
-							}
-							else {
-								meta.type[2] = codeType.None;
-								meta.node.removeAttribute("bd_use");
-								meta.node = null;
-								meta.module.done(() => meta.state = metaState.Done);
-							}
-						},
-						ajax  = e => {
-							if (meta.node.readyState != 4) return;
-
-							if ((e = meta.node.status) == 200) {
-								meta.type[2] = codeType.Object;
-								meta.module.factory = eval(meta.node.responseText || "{}");
-								meta.exec = false;
-								meta.node = null;
-								meta.module.done(() => meta.state = metaState.Done);
-							}
-							else if (e >= 300 && e < 600) errorMsg("load ajax", "url:" + meta.url, "code:" + e);
-							else if (e > 200 && e != 203) errorMsg("load ajax", "url:" + meta.url, "code:" + e);
-						};
-
-				  switch (state) {
-					  default:
-						  return done;
-					  case "error":
-						  return error;
-					  case "ajax":
-						  return ajax;
-				  }
-			  },
-			  parseModule  = name => {
-				  let url  = [parseRealUrl(name, CFG.incs, "js"), parseRealUrl(name, CFG.user, "js")],
-					  meta = null;
-
-				  $.each(MOD, d => {
-					  if ($.has(name, meta = d)) return false;
-					  if (d.url == url[0] || d.url == url[1]) return false;
-
-					  meta = null;
-				  });
-
-				  if (meta === null) meta = CFG.libs[name];
-
-				  return meta;
-			  },
-			  parseDepend  = (deps, code) => {
-				  if (code.indexOf("require") == -1) return;
-
-				  const rxpNumber = /\d/,
-						rxpQuote  = /'|"/,
-						rxpStr    = /[a-z_$]/i,
-						rxpNum    = [/^\.\d+(?:E[+-]?\d*)?\s*/i, /^0x[\da-f]*/i, /^0x[\da-f]*\s*/i],
-						rxpKey    = [/^[\w$]+/, /^require\s*\(\s*(['"]).+?\1\s*\)/, /^require\s*\(\s*['"]/, /^[\w$]+(?:\s*\.\s*[\w$]+)*/],
-						cntKey    = [
-							{
-								"if":    1,
-								"for":   1,
-								"while": 1,
-								"with":  1
-							},
-							{
-								"break":      1,
-								"case":       1,
-								"continue":   1,
-								"debugger":   1,
-								"delete":     1,
-								"do":         1,
-								"else":       1,
-								"false":      1,
-								"if":         1,
-								"in":         1,
-								"instanceof": 1,
-								"return":     1,
-								"typeof":     1,
-								"void":       1
-							}
-						],
-						pts       = [];
-
-				  const readChar  = () => {
-							s = code.charAt(i++);
-						},
-						dealQuote = () => {
-							let start = i,
-								c     = s,
-								end   = code.indexOf(c, start);
-
-							if (end == -1) i = l;
-							else if (code.charAt(end - 1) != "\\") i = end + 1;
-							else {
-								while (i < l) {
-									readChar();
-
-									if (s == "\\") i++;
-									else if (s == c) break;
-								}
-							}
-
-							if (modName) {
-								deps.push(code.slice(start, i - 1));
-								modName = 0;
-							}
-						},
-						dealReg   = () => {
-							i--;
-							while (i < l) {
-								readChar();
-
-								if (s == "\\") i++;
-								else if (s == "/") break;
-								else if (s == "[") {
-									while (i < l) {
-										readChar();
-
-										if (s == "\\") i++;
-										else if (s == "]") break;
-									}
-								}
-							}
-						},
-						dealWord  = v => {
-							let s = v.slice(i - 1),
-								r = rxpKey[0].exec(s)[0];
-
-							ptState = cntKey[0][r];
-
-							isReg = cntKey[1][r];
-
-							if (modName = rxpKey[1].test(s)) {
-								r = rxpKey[2].exec(s)[0];
-								i += r.length - 2;
-							}
-							else i += rxpKey[3].exec(s)[0].length - 1;
-						},
-						dealNum   = (v, c) => {
-							let s = c.slice(i - 1),
-								r;
-
-							if (v == '.') r = rxpNum[0].exec(s)[0];
-							else if (rxpNum[1].test(s)) r = rxpNum[2].exec(s)[0];
-							else r = rxpNum[3].exec(s)[0];
-
-							i += r.length - 1;
-							isReg = 0;
-						};
-
-				  let modName = 0,
-					  isReg   = 1,
-					  ptState = 0,
-					  i       = 0,
-					  l       = code.length,
-					  s;
-
-				  while (i < l) {
-					  readChar();
-
-					  if (rxpNumber.test(s)) {}
-					  else if (rxpQuote.test(s)) {
-						  dealQuote();
-						  isReg = 1;
-					  }
-					  else if (s == "/") {
-						  readChar();
-						  if (s == "/") {
-							  if ((i = code.indexOf("\n", i)) == -1) i = code.length;
-						  }
-						  else if (s == "*") {
-							  if ((i = code.indexOf("*/", i)) == -1) i = l;
-							  else i += 2;
-						  }
-						  else if (isReg) {
-							  dealReg();
-							  isReg = 0;
-						  }
-						  else {
-							  i--;
-							  isReg = 1;
-						  }
-					  }
-					  else if (rxpStr.test(s)) dealWord(code);
-					  else if (rxpNumber.test(s) || s == '.' && rxpNumber.test(code.charAt(i))) dealNum(s, code);
-					  else if (s == "(") {
-						  pts.push(ptState);
-						  isReg = 1;
-					  }
-					  else if (s == ")") isReg = pts.pop();
-					  else {
-						  isReg = s != "]";
-						  modName = 0;
-					  }
-				  }
-			  };
-
-		function TModule (url, deps, callback) {
-			this.factory = null;
-			this.exports = null;
-			this.callback = $.Callback("once memory", callback);
-			this.callback.on(d => this.meta.state = metaState.Loaded);
-
-			this.meta = ((url, deps) => {
-				let meta = {
-					state:  metaState.Ready,
-					type:   [false, fileType.JS, codeType.None],
-					alias:  /(\w+)\.(css|js|json)$/.exec(url),
-					deps:   deps,
-					url:    url,
-					module: this,
-					exec:   true,
-					node:   null,
-					surs:   0
-				};
-
-				meta.alias = meta.alias ? [meta.alias[1]] : [];
-				switch (url.substr(-4).toLowerCase()) {
-					case ".css":
-						meta.type[1] = fileType.CSS;
-						break;
-					case "json":
-						meta.type[1] = fileType.JSON;
-						break;
+			if (_url[0] === "/") {
+				if (!/^http[s]?:\/\//.test(_path)) _path = "";
+				else {
+					while (_path.match(SINGLE_DOT_RE)) _path = _path.replace(SINGLE_DOT_RE, "$1/");
+					_path = _path.substr(0, _path.length - 1);
 				}
+			}
 
-				return meta;
-			})(url, deps);
+			_url = `${_path}${_url}`;
+			_url = _url.replace(/\/\.\//g, "/").replace(/^(http[s]?:\/\/[\w\.-]+(?:\:[\d]+)*?)\//, "$1/").replace(/([^:\/])\/+\//g, "$1/");
+			while (_url.match(DOUBLE_DOT_RE)) _url = _url.replace(DOUBLE_DOT_RE, "/");
 
-			((meta, event) => {
-				const getNodeFile = (meta, event, node) => {
-						  const doc  = document,
-								head = doc.getElementsByTagName("head")[0] || doc.head || doc.documentElement,
-								base = head.getElementsByTagName("base")[0];
+			if (ext && !/(?:\.[A-Za-z]+|\?[^\?\.\/]*)$/.test(_url)) _url += `.${ext}`;
 
-						  if (meta.type[1] == fileType.CSS) {
-							  node = doc.createElement("link");
-							  node.type = "text/css";
-							  node.rel = "stylesheet";
-							  node.href = url;
-						  }
-						  else {
-							  node = doc.createElement("script");
-							  node.type = "text/javascript";
-							  node.async = true;
-							  node.src = url;
-						  }
+			return _url.replace(/^\//, "");
+		};
+		const loadEvent    = (state, meta) => {
+			switch (state) {
+				default:
+					return (() => {
+						if (lastMeta) {
+							meta.state = lastMeta.state;
+							if (meta.state === metaState.Error) errorMsg("factory null");
 
-						  meta.state = metaState.Loading;
-						  meta.node = node;
+							meta.type[2] = lastMeta.type;
+							meta.alias   = $.unique(meta.alias.concat(lastMeta.alias));
+							meta.deps    = $.unique(meta.deps.concat(lastMeta.deps));
 
-						  node.setAttribute("bd_use", true);
-						  node.onload = event("loaded", meta);
-						  node.onerror = event("error", meta);
+							meta.node           = meta.node.remove() && null;
+							meta.exec           = lastMeta.exec;
+							meta.module.factory = lastMeta.factory;
 
-						  base ? head.insertBefore(node, base) : head.appendChild(node);
-					  },
-					  getNodeUrl  = (meta, event, node) => {
-						  if (!window.XMLHttpRequest) errorMsg("CMD Load Method Error");
+							((meta, module) => {
+								if (meta.deps.length < 1) {
+									module.done();
+								}
+								else {
+									meta.surs = meta.deps.length;
+									meta.deps.forEach((d, i) => {
+										module.require(d, mod => {
+											meta.surs -= 1;
+											meta.deps[i] = mod;
 
-						  meta.state = metaState.Loading;
-						  meta.node = node;
+											module.done();
+										});
+									});
+								}
+							})(meta, meta.module);
 
-						  node.onreadystatechange = event("ajax", meta);
-						  node.open("GET", url, true);
-						  node.send(null);
-					  };
+							lastMeta = null;
+						}
+						else {
+							meta.type[2] = codeType.None;
+							meta.node.removeAttribute("jshow_use");
+							meta.node = null;
+							meta.module.done(() => {
+								meta.state = metaState.Done;
+							});
+						}
+					});
+				case "error":
+					return (e => {
+						errorMsg(`load event url:${meta.url} msg:${e.message}`);
+					});
+				case "ajax":
+					return (() => {
+						if (meta.node.readyState !== 4) return;
 
-				if (meta.type[1] == fileType.JSON) getNodeUrl(meta, event);
-				else getNodeFile(meta, event);
-			})(this.meta, loadEvent);
+						let e = meta.node.status;
 
-			return this;
-		}
-
-		TModule.require = function (url, deps, callback) {
-			if (typeof(url) != "string" || !url) errorMsg("load url is null");
-
-			const done = tag => {
-					  return function () {
-						  let exec = null;
-
-						  if (meta) {
-							  exec = meta.module.exec();
-							  if (tag) $[tag] = exec;
-							  if (callback) callback();
-						  }
-
-						  return exec;
-					  }
-				  },
-				  load = (url, path, tag) => {
-					  meta = (new TModule(parseRealUrl(url, path, "js"), deps || [], done(tag))).meta;
-					  MOD[meta.url] = meta;
-				  };
-
+						if (e === 200) {
+							meta.type[2]        = codeType.Object;
+							meta.exec           = false;
+							meta.node           = null;
+							meta.module.factory = eval(meta.node.responseText || "{}");
+							meta.module.done(() => {
+								meta.state = metaState.Done;
+							});
+						}
+						else if (e >= 200 && e < 600) errorMsg(`load ajax url:${meta.url} code:${e}`);
+						else if (e > 200 && e !== 203) errorMsg(`load ajax url:${meta.url} code:${e}`);
+					});
+			}
+		};
+		const parseModule  = name => {
+			let url  = [parseRealUrl(name, CFG.incs, "js"), parseRealUrl(name, CFG.user, "js")];
 			let meta = null;
 
-			if (arguments.length == 2 && typeof(deps) == "function") {
-				callback = deps;
-				deps = null;
-			}
-			if (typeof(deps) == "string" && deps) deps = [deps];
+			$.each(MOD, d => {
+				meta = d;
 
-			switch ($.type(meta = parseModule(url))) {
-				case "string":
-					load(meta, CFG.incs, url);
-					break;
-				case "null":
-					load(url, CFG.user);
-					break;
-				case "object":
-					if (meta.state != metaState.Error) return done(url);
-				default:
-					errorMsg("require");
-					break;
-			}
+				if ($.has(name, meta)) return false;
+				if (d.url === url[0] || d.url === url[1]) return false;
+
+				meta = null;
+			});
+
+			if (meta === null) meta = CFG.libs[name];
+
+			return meta;
 		};
-		TModule.define = (factory, own, deps, alias, exec) => {
-			switch ($.type(deps, true)) {
-				case "string":
-					deps = [deps];
-					break;
-				case "array":
-					break;
-				default:
-					deps = [];
-					break;
-			}
-			switch ($.type(alias, true)) {
-				case "string":
-					alias = [alias];
-					break;
-				case "array":
-					break;
-				default:
-					alias = [];
-					break;
-			}
+		const parseDepend  = (deps, code) => {
+			if (code.indexOf("require") === -1) return;
 
-			lastMeta = {
-				state:   metaState.Define,
-				type:    codeType.Value,
-				alias:   alias,
-				deps:    deps,
-				factory: factory,
-				exec:    exec !== false
+			const rxpNumber = /\d/;
+			const rxpQuote  = /'|"/;
+			const rxpStr    = /[a-z_$]/i;
+			const rxpNum    = [/^\.\d+(?:E[+-]?\d*)?\s*/i, /^0x[\da-f]*/i, /^0x[\da-f]*\s*/i];
+			const rxpKey    = [/^[\w$]+/, /^require\s*\(\s*(['"]).+?\1\s*\)/, /^require\s*\(\s*['"]/, /^[\w$]+(?:\s*\.\s*[\w$]+)*/];
+			const cntKey    = [
+				{
+					"if":    true,
+					"for":   true,
+					"while": true,
+					"with":  true
+				},
+				{
+					"break":      true,
+					"case":       true,
+					"continue":   true,
+					"debugger":   true,
+					"delete":     true,
+					"do":         true,
+					"else":       true,
+					"false":      true,
+					"if":         true,
+					"in":         true,
+					"instanceof": true,
+					"return":     true,
+					"typeof":     true,
+					"void":       true
+				}
+			];
+			const pts       = [];
+
+			let isMod = false;
+			let isReg = true;
+			let isPT  = false;
+			let i     = 0;
+			let l     = code.length;
+			let str   = "";
+
+			const readChar  = () => {
+				str = code.charAt(i++);
+				i += 1;
+			};
+			const dealQuote = () => {
+				let start = i;
+				let code  = str;
+				let end   = code.indexOf(code, start);
+
+				if (end === -1) i = l;
+				else if (code.charAt(end - 1) !== "\\") i = end + 1;
+				else {
+					while (i < l) {
+						readChar();
+
+						if (str === "\\") i += 1;
+						else if (str === code) break;
+					}
+				}
+
+				if (isMod) {
+					deps.push(code.slice(start, i - 1));
+					isMod = false;
+				}
+			};
+			const dealReg   = sub => {
+				if (sub) i -= 1;
+
+				while (i < l) {
+					readChar();
+
+					switch (str) {
+						case "\\":
+							i += 1;
+							break;
+						case "/":
+							if (!sub) return;
+							break;
+						case "[":
+							if (!sub) dealReg(true);
+							break;
+						case "]":
+							if (sub) return;
+							break;
+					}
+				}
+			};
+			const dealWord  = value => {
+				let str = value.slice(i - 1);
+				let rxp = rxpKey[0].exec(str)[0];
+
+				isPT  = cntKey[0][rxp];
+				isReg = cntKey[1][rxp];
+				isMod = rxpKey[1].test(str);
+
+				if (isMod) {
+					rxp = rxpKey[2].exec(str)[0];
+					i += rxp.length - 2;
+				}
+				else i += rxpKey[3].exec(str)[0].length - 1;
+			};
+			const dealNum   = (value, code) => {
+				let str = code.slice(i - 1);
+				let r;
+
+				if (value === '.') r = rxpNum[0].exec(str)[0];
+				else if (rxpNum[1].test(str)) r = rxpNum[2].exec(str)[0];
+				else r = rxpNum[3].exec(str)[0];
+
+				i += r.length - 1;
+				isReg = false;
 			};
 
-			if (factory) {
-				lastMeta.state = metaState.Define;
-				switch ($.type(factory)) {
-					case "function":
-						lastMeta.type = codeType.Function;
-						parseDepend(lastMeta.deps, lastMeta.factory.toString());
-						break;
-					case "object":
-						lastMeta.type = codeType.Object;
-						break;
+			for (i = 0; i < l;) {
+				readChar();
+
+				if (rxpNumber.test(str)) {
+				}
+				else if (rxpQuote.test(str)) {
+					dealQuote();
+					isReg = true;
+				}
+				else if (str === "/") {
+					readChar();
+
+					if (str === "/") {
+						i = code.indexOf("\n", i);
+
+						if (i === -1) i = code.length;
+					}
+					else if (str === "*") {
+						i = code.indexOf("*/", i);
+
+						if (i === -1) i = l;
+						else i += 2;
+					}
+					else if (isReg) {
+						dealReg();
+						isReg = false;
+					}
+					else {
+						i--;
+						isReg = true;
+					}
+				}
+				else if (rxpStr.test(str)) {
+					dealWord(code);
+				}
+				else if (rxpNumber.test(str) || ((str === '.') && rxpNumber.test(code.charAt(i)))) {
+					dealNum(str, code);
+				}
+				else if (str === "(") {
+					pts.push(isPT);
+					isReg = true;
+				}
+				else if (str === ")") {
+					isReg = !!(pts.pop());
+				}
+				else {
+					isReg = (str !== "]");
+					isMod = false;
 				}
 			}
 		};
 
-		TModule.prototype = {
-			require: function (url, callback) {
+		class TModule {
+			constructor (url, deps, callback) {
+				this._factory  = null;
+				this._exports  = null;
+				this._callback = $.Callback({flag: "once memory", callback});
+				this._callback.on(() => {
+					this.meta.state = metaState.Loaded;
+				});
+
+				this._meta = ((url, deps) => {
+					let meta = {
+						state:  metaState.Ready,
+						type:   [false, fileType.JS, codeType.None],
+						alias:  /(\w+)\.(css|js|json)$/.exec(url),
+						deps:   deps,
+						url:    url,
+						module: this,
+						exec:   true,
+						node:   null,
+						surs:   0
+					};
+
+					meta.alias = meta.alias ? [meta.alias[1]] : [];
+
+					switch (url.substr(-4).toLowerCase()) {
+						case ".css":
+							meta.type[1] = fileType.CSS;
+							break;
+						case "json":
+							meta.type[1] = fileType.JSON;
+							break;
+					}
+
+					return meta;
+				})(url, deps);
+
+				((meta, event) => {
+					const getNodeFile = (meta, event) => {
+						const doc  = document;
+						const head = doc.getElementsByTagName("head")[0] || doc.head || doc.documentElement;
+						const base = head.getElementsByTagName("base")[0];
+
+						let node;
+
+						switch (meta.type[1]) {
+							case fileType.CSS:
+								node      = doc.createElement("link");
+								node.type = "text/css";
+								node.rel  = "stylesheet";
+								node.href = url;
+								break;
+							case fileType.JS:
+								node       = doc.createElement("script");
+								node.type  = "text/javascript";
+								node.async = true;
+								node.src   = url;
+								break;
+						}
+
+						meta.state = metaState.Loading;
+						meta.node  = node;
+
+						node.setAttribute("jshow_use", true);
+						node.onload  = event("loaded", meta);
+						node.onerror = event("error", meta);
+
+						base ? head.insertBefore(node, base) : head.appendChild(node);
+					};
+					const getNodeUrl  = (meta, event) => {
+						if (!window.XMLHttpRequest) errorMsg("CMD Load Method Error");
+
+						meta.state = metaState.Loading;
+						meta.node  = void (0);
+
+						node.onreadystatechange = event("ajax", meta);
+						node.open("GET", url, true);
+						node.send(null);
+					};
+
+					switch (meta.type[1]) {
+						default:
+						case fileType.JSON:
+							getNodeUrl(meta, event);
+							break;
+						case fileType.CSS:
+						case fileType.JS:
+							getNodeFile(meta, event);
+							break;
+					}
+				})(this._meta, loadEvent);
+			}
+
+			static create (url, deps, callback) {
+				return new TModule(url, deps || [], callback);
+			}
+
+			static require (url, deps, callback = deps) {
+				if (!$.isString(url)) errorMsg("load url is null");
+
 				const done = tag => {
-						  return function () {
-							  if (!meta) return;
-							  if (tag) $[tag] = meta.module.exec();
-							  if (callback) callback(meta.module.exec());
-						  }
-					  },
-					  load = (url, path, tag) => {
-						  meta = (new TModule(parseRealUrl(url, path, "js"), [], done(tag))).meta;
-						  MOD[meta.url] = meta;
-					  };
+					return function doneByTag () {
+						let exec = null;
 
-				let meta = null;
+						if (meta) {
+							exec = meta.module.exec();
+							if (tag) $[tag] = exec;
+							if ($.isFunction(callback, true)) callback(exec);
+						}
 
-				switch ($.type(meta = parseModule(url))) {
+						return exec;
+					};
+				};
+				const load = (url, path, tag) => {
+					let _url = parseRealUrl(url, path, "js");
+
+					meta          = TModule.create(_url, dep || [], done(tag)).meta;
+					MOD[meta.url] = meta;
+				};
+
+				let dep  = $.isString(deps) ? [deps] : deps;
+				let meta = parseModule(url);
+
+				switch ($.type(meta)) {
+					case "object":
+						if (meta.state !== metaState.Error) return done(url);
+					default:
+						errorMsg("require is throw");
+						break;
 					case "string":
 						load(meta, CFG.incs, url);
 						break;
 					case "null":
 						load(url, CFG.user);
 						break;
-					case "object":
-						if (meta.state != metaState.Error) {
-							if (callback) meta.module.callback.on(callback);
-							break;
-						}
+				}
+			}
+
+			static define (alias, deps = alias, factory = deps, owner = factory, exec = owner) {
+				let dep  = deps;
+				let name = alias;
+
+				switch ($.type(name, true)) {
 					default:
-						errorMsg("module require");
+						name = [];
+						break;
+					case "string":
+						name = [name];
+						break;
+					case "array":
 						break;
 				}
 
+				switch ($.type(dep, true)) {
+					default:
+						dep = [];
+						break;
+					case "string":
+						dep = [dep];
+						break;
+					case "array":
+						break;
+				}
+
+				lastMeta = {
+					state:   metaState.Define,
+					type:    codeType.Value,
+					alias:   name,
+					deps:    dep,
+					factory: factory,
+					exec:    exec !== false
+				};
+
+				if (factory) {
+					lastMeta.state = metaState.Define;
+					switch ($.type(factory)) {
+						case "function":
+							lastMeta.type = codeType.Function;
+							parseDepend(lastMeta.deps, CFG.mode === loadMode.CMD ? lastMeta.factory.toString() : "");
+							break;
+						case "object":
+							lastMeta.type = codeType.Object;
+							break;
+					}
+				}
+			}
+
+			static config (cfg) {
+				let {
+						mode  = loadMode.AMD,
+						delay = true,
+						root, incs, user,
+						deps, libs
+					} = cfg;
+
+				if ($.isArray(cfg)) deps = cfg;
+				if ($.isArray(libs)) CFG.deps = [...CFG.deps, ...libs];
+
+				CFG.mode  = $.has(mode, loadMode) ? mode : CFG.mode;
+				CFG.delay = delay === true;
+				CFG.root  = parseHref($.isString(root) ? root : CFG.root);
+				CFG.incs  = parseHref($.isString(incs) ? incs : CFG.incs) + "/";
+				CFG.user  = parseHref($.isString(user) ? user : CFG.user) + "/";
+
+				$.each(CFG.deps, (d, i) => {
+					CFG.deps[i] = parseRealUrl(d, CFG.incs, "js");
+				});
+				$.each(deps, d => {
+					CFG.deps.push(parseRealUrl(d, CFG.user, "js"));
+				});
+
+				CFG.deps = $.unique(CFG.deps);
+
+				return CFG;
+			}
+
+			static ready (callback) {
+				if (!$.isFunction(callback)) return;
+
+				const DOMCL = function () {
+					callback();
+
+					if (document.addEventListener()) document.removeEventListener("DOMContentLoaded", DOMCL, false);
+					else if (document.readyState === "complete") document.detachEvent("onreadystatechange", DOMCL);
+				};
+
+				if (document.readyState === "complete") DOMCL();
+				else if (document.addEventListener) document.addEventListener("DOMContentLoaded", DOMCL, false);
+				else if (document.attachEvent) document.attachEvent("onreadystatechange", DOMCL);
+				else window.onload = DOMCL;
+			}
+
+			static use (url, cfg = url, callback = cfg) {
+				const done = (url, deps, callback) => {
+					$.require(url, deps, mod => {
+						if (callback) callback(mod);
+					});
+				};
+
+				$.config(cfg);
+
+				let _url      = $.isString(url) ? parseRealUrl(url, CFG.user, "js") : parseHref(`${CFG.incs}/lib/web/use.js`);
+				let _callback = $.isFunction(_callback) ? callback : null;
+				let _deps     = CFG.deps;
+
+				if (CFG.delay) $.ready(() => done(_url, _deps, _callback));
+				else done(_url, _deps, _callback);
+			}
+
+			get factory () {
+				return this._factory;
+			}
+
+			get exports () {
+				return this._exports;
+			}
+
+			get callback () {
+				return this._callback;
+			}
+
+			get meta () {
+				return this._meta;
+			}
+
+			require (url, callback) {
+				const done = tag => {
+					return function doneByTag () {
+						let exec = null;
+
+						if (meta) {
+							exec = meta.module.exec();
+							if (tag) $[tag] = exec;
+							if ($.isFunction(callback, true)) callback(exec);
+						}
+
+						return exec;
+					};
+				};
+				const load = (url, path, tag) => {
+					let _url = parseRealUrl(url, path, "js");
+
+					meta = TModule.create(_url, [], done(tag)).meta;
+
+					MOD[meta.url] = meta;
+				};
+
+				let meta = parseModule(url);
+
+				switch ($.type(meta)) {
+					case "object":
+						if (meta.state !== metaState.Error) {
+							if ($.isFunction(callback, true)) meta.module.callback.on(callback);
+							break;
+						}
+					default:
+						errorMsg("module require is throw");
+						break;
+					case "string":
+						load(meta, CFG.incs, url);
+						break;
+					case "null":
+						load(url, CFG.user);
+						break;
+
+				}
+
 				return this;
-			},
-			done:    function (callback) {
+			}
+
+			done (callback) {
 				if (this.meta.surs < 1) {
-					if (typeof(callback) == "function") this.callback.on(callback);
+					if ($.isFunction(callback, true)) this.callback.on(callback);
+
 					this.callback.fireWith(this, this.meta);
 				}
 
 				return this;
-			},
-			exec:    function () {
-				let meta = this.meta,
-					exp  = this.exports;
+			}
 
-				if (meta.state != metaState.Done && meta.state > metaState.Loaded) return exp;
+			exec () {
+				let meta    = this.meta;
+				let exports = this.exports;
 
-				if (meta.state == metaState.Loaded) {
+				if (meta.state !== metaState.Done && meta.state > metaState.Loaded) return exports;
+
+				if (meta.state === metaState.Loaded) {
 					meta.state = metaState.Executing;
 
 					switch (meta.type[2]) {
@@ -3061,128 +3818,68 @@
 							return;
 						case codeType.Function:
 							if (meta.exec) {
-								exp = this.factory.call(this.exports = {}, this, this.exports, TModule.require);
+								exports = {};
 
-								if (exp !== void(0)) this.exports = exp;
+								let module = {exports};
+
+								this._exports = exports;
+
+								exports = this.factory.call(exports, TModule.require, module, ...meta.deps);
+
+								if (exports === void(0)) exports = module.exports;
+
+								this._exports = exports;
 								break;
 							}
 						default:
-							exp = this.exports = this.factory;
+							exports       = this.factory;
+							this._exports = exports;
 							break;
 					}
 
 					meta.state = metaState.Done;
 				}
 
-				return exp;
+				return exports;
 			}
-		};
-
-		$.config = cfg => {
-			let deps = [];
-
-			if ($.isArray(cfg)) cfg = {deps: cfg};
-
-			$.each(cfg, (d, k) => {
-				switch (k) {
-					case "delay":
-					case "root":
-					case "incs":
-					case "user":
-						CFG[k] = d;
-						break;
-					case "deps":
-						if ($.isArray(d) && d.length > 0) Array.prototype.push.apply(deps, d);
-						break;
-					case "libs":
-						if ($.isArray(d) && d.length > 0) Array.prototype.push.apply(CFG.deps, d);
-						break;
-				}
-			});
-
-			CFG.root = parseHref(CFG.root);
-			CFG.incs = parseHref(CFG.incs, CFG.root) + "/";
-			CFG.user = parseHref(CFG.user, CFG.root) + "/";
-
-			$.each(CFG.deps, (d, i) => CFG.deps[i] = parseRealUrl(d, CFG.incs, "js"));
-			$.each(deps, (d, i) => CFG.deps.push(parseRealUrl(d, CFG.user, "js")));
-			CFG.deps = $.unique(CFG.deps);
-
-			return CFG;
-		};
-		$.ready = fn => {
-			if (!$.isFunction(fn)) return;
-
-			function DOMCL () {
-				fn();
-
-				if (document.addEventListener) document.removeEventListener("DOMContentLoaded", DOMCL, false);
-				else if (document.readyState === "complete") document.detachEvent("onreadystatechange", DOMCL);
-			}
-
-			if (document.readyState === "complete") DOMCL();
-			else if (document.addEventListener) document.addEventListener("DOMContentLoaded", DOMCL, false);
-			else if (document.attachEvent) document.attachEvent("onreadystatechange", DOMCL);
-			else window.onload = DOMCL;
-		};
-		$.use = function (url, cfg, callback) {
-			let done = (url, deps, callback) => {
-					$.require(url, deps, mod => { if (callback) callback(mod); });
-				},
-				load = (url, done, callback) => {
-					return () => {
-						let _url  = parseRealUrl(url, config.user, "js"),
-							_surs = (CFG.deps = $.unique(CFG.deps)).length;
-
-						if (_surs < 1) done(_url, CFG.deps, callback);
-						else {
-							$.each(CFG.deps, d => {
-								if (--_surs > 0) return;
-								done(_url, CFG.deps, callback);
-							});
-						}
-					}
-				};
-
-			if (cfg === void(0)) cfg = url;
-			if (callback === void(0)) callback = cfg;
-
-			$.config(cfg);
-
-			if (!$.isString(url)) url = parseHref(CFG.incs + "./lib/web/use.js");
-			if (!$.isFunction(callback)) callback = null;
-
-			if (CFG.delay) $.ready(load(url, done, callback));
-			else load(url, done, callback)();
-		};
+		}
 
 		return TModule;
-	})(config, modeules);
+	})(config, modules);
 
-	$.require = TModule.require;
-	$.define = TModule.define;
-
-	global.__module = modeules;
-	//适配部分外部库通过此属性区分Node状态;
-	global.module = void(0);
-
-	if (!global.require) global.require = $.require;
-	if (!global.define) global.define = $.define;
-
-	$.__require = (url, tag) => {
-		if (tag) config.libs[tag] = url;
-		else config.deps.push(url);
+	const api = {
+		loadMode,
+		fileType,
+		require: TModule.require,
+		define:  TModule.define,
+		config:  TModule.config,
+		ready:   TModule.ready,
+		use:     TModule.use,
+		__require (url, tag) {
+			if (tag) config.libs[tag] = url;
+			else config.deps.push(url);
+		}
 	};
 
+	jShow = {...owner, ...api};
+
+	global.__module = modules;
+	//适配部分外部库通过此属性区分Node状态;
+	global.module   = void(0);
+
+	if (!global.require) global.require = api.require;
+	if (!global.define) global.define = api.define;
+
 	if ($.mode & $.MODE.Web) {
-		$.__require("../src/jquery.min.js");
-		$.__require("../src/global.min.css");
+		api.__require("../src/jquery.min.js");
+		api.__require("../src/global.min.css");
 	}
 	else if ($.mode & $.MODE.WebMobile) {
-		$.__require("../src/jquery.min.js");
-		$.__require("../src/global.min.css");
+		api.__require("../src/jquery.min.js");
+		api.__require("../src/global.min.css");
 	}
-})(this);
+
+})(jShow);
 /**
  * ==========================================
  * Name:           jShow's Load Module
@@ -3191,25 +3888,46 @@
  * Description:    Node.js Load Module
  * Log:
  * 2019-03-14    Init Class
+ * 2019-05-20    Format Code to jShow Style Guide
  * ==========================================
  */
-($ => {
+(owner => {
+	const $ = global.jShow;
+
 	if ($.mode !== $.MODE.Node) return;
 
-	$.__require = $.require = (url, tag) => {
-		if (tag === void(0)) tag = url;
+	const _require = (url, tag, owner) => owner[tag || url] = require(url);
+	const _define = (alias, deps = alias, factory = deps, owner = factory, exec = owner) => {
+		let modules = $.isArray(deps) ? [...deps] : [];
+		let func = factory;
 
-		return this[tag] = require(url);
+		modules.forEach((d, i) => {
+			modules[i] = $[d] || require(d);
+		});
+
+		if ($.isFunction(func) && exec !== false) {
+			func = func(require, owner, ...modules);
+			if (func === void(0)) func = owner.exports;
+		}
+
+		owner.exports = func;
+
+		return owner.exports;
 	};
 
-	$.__define = $.define = (factory, own, deps, alias, exec) => {
-		if ($.isFunction(factory) && exec !== false) factory = factory(own.module, own.exports, require);
+	const api = {
+		__require: _require,
+		require:   _require,
+		__define:  _define,
+		define:    _define
+	};
 
-		return own.module.exports = factory;
-	}
-})(this);
+	jShow = {...owner, ...api};
 
-/**
+	if (!global.define) global.define = api.define;
+})(jShow);
+
+	/**
  * ==========================================
  * Name:           jShow's Loading
  * Author:         j-show
