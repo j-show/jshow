@@ -3,65 +3,84 @@
  * Name:           Date
  * Author:         jShow
  * CreTime:        2014-11-20
- * Description:    时间计算
+ * Description:    Calc Time
  * Log
- * 2015-06-09    优化模块结构
- * 2017-02-10    去除函数默认参数,增加适配
+ * 2015-06-08    Optimize module structure
+ * 2017-02-10    Change Function arguments default value
+ * 2019-05-25    Format Code to jShow Style Guide
  * ==========================================
  */
-jShow.define(function (module, exports, require) {
+define("Date", [], function (require, module) {
 	"use strict";
-	let api;
+
+	const $ = jShow;
 
 	/**
-	 * 时间日期计算
-	 *
 	 * @namespace Date
 	 */
-	api = {
+	const api = {
 		/**
-		 * 获取日期部分时间
+		 * Get date part of value
 		 *
-		 * @param {date} value
+		 * @param {date|number} value
 		 * @returns {date}
 		 */
-		DateOf:         value => {
-			value = jShow.isDate(value) ? value : new Date();
+		DateOf (value) {
+			let data = value;
 
-			return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+			switch ($.type(data, true)) {
+				default:
+					data = new Date();
+					break;
+				case "number":
+					data = new Date(data);
+					break;
+				case "date":
+					data = new Date(data.getTime());
+					break;
+			}
+
+			return new Date(data.getFullYear(), data.getMonth(), data.getDate());
 		},
 		/**
-		 * 获取时间部分时间
+		 * Get time part of value
 		 *
-		 * @param {date} value
+		 * @param {date|number} value
 		 * @returns {date}
 		 */
-		TimeOf:         value => {
-			value = jShow.isDate(value) ? value : new Date();
+		TimeOf (value) {
+			let data = value;
 
-			return new Date(0, 0, 0, value.getHours(), value.getMinutes(), value.getSeconds(), value.getMilliseconds());
+			switch ($.type(data, true)) {
+				default:
+					data = new Date();
+					break;
+				case "number":
+					data = new Date(data);
+					break;
+				case "date":
+					data = new Date(data.getTime());
+					break;
+			}
+
+			return new Date(0, 0, 0, data.getHours(), data.getMinutes(), data.getSeconds(), data.getMilliseconds());
 		},
 		/**
-		 * 获得格式化时间内容
+		 * Get format time object
 		 *
-		 * @param {number|date} value 毫秒数
+		 * @param {number|date} value
 		 * @param {object|boolean|string} [opt]
-		 *    @parma {string|boolean} [opt.fmt=all] 格式化参数
-		 *    @param {boolean} [opt.surplus=false] 剩余模式
+		 *    @parma {string|boolean} [opt.fmt=all] <format code>
+		 *    @param {boolean} [opt.surplus=false] <return value is surplus mode>
 		 * @returns {object}
 		 */
-		ValueOf:        (value, opt) => {
-			let result = {year: 0, month: 0, week: 0, day: 0, hour: 0, minute: 0, second: 0, millisecond: 0},
-				max    = {value: 0, unit: "millisecond"},
-				fmt, surplus;
+		ValueOf (value, opt) {
+			let {
+					fmt     = "all",
+					surplus = false
+				} = opt;
 
 			switch (typeof(opt)) {
-				case "object":
-					if (opt) {
-						fmt = opt.fmt;
-						surplus = opt.surplus;
-					}
-					break;
 				case "boolean":
 					surplus = opt;
 					break;
@@ -69,12 +88,25 @@ jShow.define(function (module, exports, require) {
 					fmt = opt;
 					break;
 			}
+
+			if (!$.isString(fmt)) fmt = "all";
 			surplus = surplus === true;
 
-			if (jShow.isDate(value)) value = value.getTime();
-			if (!jShow.isNumber(value)) return 0;
+			let data = value;
 
-			jShow.each([
+			switch ($.type(data, true)) {
+				default:
+					data = new Date();
+					break;
+				case "number":
+					data = new Date(data);
+					break;
+				case "date":
+					break;
+			}
+
+			const result = {year: 0, month: 0, week: 0, day: 0, hour: 0, minute: 0, second: 0, millisecond: 0};
+			const list   = [
 				["millisecond", 1000],
 				["second", 60],
 				["minute", 60],
@@ -83,10 +115,21 @@ jShow.define(function (module, exports, require) {
 				["week", 4],
 				["month", 13],
 				["year", 1]
-			], d => {
-				result[d[0]] = surplus ? value % d[1] : value;
-				if (result[d[0]] > 0) max.value = result[max.unit = d[0]];
-				value = parseInt(value / d[1]);
+			];
+
+			data = data.getTime();
+
+			let max = {value: 0, unit: "millisecond"};
+			let num;
+
+			list.forEach(d => {
+				num = surplus ? (data % d[1]) : data;
+
+				result[d[0]] = num;
+
+				if (num > 0) max = {unit: d[0], value: num};
+
+				data = parseInt(data / d[1]);
 			});
 
 			switch (fmt) {
@@ -121,288 +164,319 @@ jShow.define(function (module, exports, require) {
 			}
 		},
 		/**
-		 * 昨天
-		 *
-		 * @param {date|number} value
-		 * @param {boolean} [day=true] 是否取天整
-		 * @returns {date}
-		 */
-		Yesterday:      (value, day) => {
-			value = api.IncDay(-1, value);
-			return day !== false ? api.DateOf(value) : value;
-		},
-		/**
-		 * 明天
-		 *
-		 * @param {date|number} value
-		 * @param {boolean} [day=true] 是否取天整
-		 * @returns {date}
-		 */
-		Tomorrow:       (value, day) => {
-			value = api.IncDay(1, value);
-			return day !== false ? api.DateOf(value) : value;
-		},
-		/**
-		 * 是否是闰年
+		 * Get how manay day of year
 		 *
 		 * @param {number|date} value
-		 * @returns {date}
+		 * @returns {number}
 		 */
-		IsLeapYear:     value => {
-			if (jShow.isNumber(value)) value = new Date(value);
-			if (!jShow.isDate(value)) return false;
+		YearOfDay (value) {
+			let year = 0;
 
-			value = new Date(value.getFullYear(), 1, 29);
-
-			return value.getMonth() == 1 && value.getDate() == 29;
-		},
-		/**
-		 * 本月有多少天
-		 *
-		 * @param {number|date} year 当参数为1时,接受时间类型
-		 * @param {number} month
-		 * @returns {date}
-		 */
-		MonthOfDay:     function (month, year) {
-			let date = arguments.length == 1 && jShow.isDate(month) ? month : new Date();
-
-			if (!jShow.isNumber(month, {min: 0})) month = date.getMonth() + 1;
-			if (!jShow.isNumber(year, {min: 1})) year = date.getFullYear();
-
-			if (month == 2) return api.IsLeapYear(year) ? 29 : 28;
-
-			return ([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])[month - 1] || 30;
-		},
-		/**
-		 * 本年有多少天
-		 *
-		 * @param {number|date} value
-		 * @returns {date}
-		 */
-		YearOfDay:      value => api.IsLeapYear(value) ? 366 : 365,
-		/**
-		 * 本月第几天
-		 *
-		 * @param {date} value
-		 * @returns {date}
-		 */
-		DayOfMonth:     value => api.DateOf(value).getDate(),
-		/**
-		 * 本年第几天
-		 *
-		 * @param {date} value
-		 * @returns {date}
-		 */
-		DayOfYear:      value => {
-			value = api.DateOf(value);
-
-			return api.DecMillisecond(value, new Date(value.getFullYear(), 0, 1)) / 86400000 + 1;
-		},
-		/**
-		 * 本月的第几周
-		 *
-		 * @param {date} value
-		 * @returns {date}
-		 */
-		WeekOfMonth:    value => parseInt(api.DayOfMonth(value) / 7),
-		/**
-		 * 本年的第几周
-		 *
-		 * @param {date} value
-		 * @returns {date}
-		 */
-		WeekOfYear:     value => parseInt(api.DayOfYear(value) / 7),
-		/**
-		 * 时间增量
-		 *
-		 * @param {number|object} value 增加量
-		 * @param {object|string|date} [date]
-		 *    @param {date} [date.date=now] 基准时间
-		 *    @param {string} [date.type=d] 增加类型，默认是天数
-		 * @param {string} [type=d] 增加类型，默认是天数
-		 * @returns {date}
-		 */
-		Inc:            (value, date, type) => {
-			let result, dt;
-
-			switch (jShow.type(date, true)) {
-				case "object":
-					if (date) {
-						dt = date.date;
-						type = date.type;
-					}
-					break;
-				case "string":
-					type = date;
+			switch ($.type(value, true)) {
+				default:
+					year = (new Date()).getFullYear();
 					break;
 				case "date":
-					dt = date;
+					year = value.getFullYear();
+					break;
+				case "number":
+					year = value;
 					break;
 			}
-			if (!jShow.isString(type)) type = "d";
 
-			switch (jShow.type(value, true)) {
+			return $.isLeapYear(year) ? 366 : 365;
+		},
+		/**
+		 * Get how manay day of month
+		 *
+		 * @param {date|object} value
+		 *    @param {number} [value.year]
+		 *    @param {number} [value.month]
+		 * @returns {number}
+		 */
+		MonthOfDay (value) {
+			let {
+					year, month
+				} = value;
+
+			const setOpt = value => {
+				year  = value.getFullYear();
+				month = value.getMonth() + 1;
+			};
+
+			switch ($.type(value, true)) {
 				default:
-					value = 1;
+					setOpt(new Date());
+					break;
 				case "number":
-					result = {};
-					result[type] = value;
+					setOpt(new Date(value));
+					break;
+				case "date":
+					setOpt(value);
 					break;
 				case "object":
-					result = value;
+					if (!$.isNumber(month, {min: 0}) || !$.isNumber(year, {min: 1})) setOpt(new Date());
 					break;
 			}
-			value = result;
 
-			jShow.each(value, (d, k, t) => {
-				if (t != "number") return;
+			switch (month) {
+				default:
+					return 31;
+				case 2:
+					return $.isLeapYear(year) ? 29 : 28;
+				case 4:
+				case 6:
+				case 9:
+				case 11:
+					return 30;
+			}
+		},
+		/**
+		 * Get day of year
+		 *
+		 * @param {date} value
+		 * @returns {number}
+		 */
+		DayOfYear (value) {
+			let data = api.DateOf(value);
 
+			return parseInt(api.DecMillisecond(data, new Date(data.getFullYear(), 0, 1)) / 86400000) + 1;
+		},
+		/**
+		 * Get day of month
+		 *
+		 * @param {date} value
+		 * @returns {number}
+		 */
+		DayOfMonth (value) {
+			return api.DateOf(value).getDate();
+		},
+		/**
+		 * Get day of week
+		 *
+		 * @param {date} value
+		 * @param {number} day <start day of week, default 1>
+		 * @returns {number}
+		 */
+		DayOfWeek (value, day = 1) {
+			let start = $.isNumber(day, {min: 0, max: 6}) ? day : 1;
+			let data  = api.DateOf(value).getDay();
+
+			return data + (data < start ? 7 : 0) - start;
+		},
+		/**
+		 * Get week of month
+		 *
+		 * @param {date} value
+		 * @param {number} day <start day of week, default 1>
+		 * @returns {number}
+		 */
+		WeekOfMonth (value, day = 1) {
+			let data  = api.DateOf(value);
+			let start = api.DayOfWeek(new Date(data.getFullYear(), data.getMonth(), 1), day);
+
+			return parseInt((data.getDate() + start) / 7);
+		},
+		/**
+		 * Get week of year
+		 *
+		 * @param {date} value
+		 * @param {number} day <start day of week, default 1>
+		 * @returns {number}
+		 */
+		WeekOfYear (value, day = 1) {
+			let data  = api.DateOf(value);
+			let start = api.DayOfWeek(new Date(data.getFullYear(), 0, 1), day);
+
+			return parseInt((api.DayOfYear(data) + start) / 7);
+		},
+		/**
+		 * Inc time dependence in type
+		 *
+		 * @param {number|object} value
+		 * @param {object|string|date} [opt]
+		 *    @param {date} [opt.date=now] <reference time>
+		 *    @param {string} [opt.type=d] <inc type, default day>
+		 * @returns {date}
+		 */
+		Inc (value, opt) {
+			let data = value;
+
+			let {
+					date,
+					type = "d"
+				} = opt;
+
+			switch ($.type(opt, true)) {
+				case "string":
+					type = opt;
+					break;
+				case "date":
+					date = opt;
+					break;
+			}
+
+			if (!$.isString(type)) type = "d";
+
+			switch ($.type(data, true)) {
+				default:
+				case "number":
+					data       = {};
+					data[type] = value;
+					break;
+				case "object":
+					break;
+			}
+
+			for (let k in data) {
 				switch (k) {
 					case "millisecond":
 					case "ms":
-						result = api.IncMillisecond(d, dt);
-						break;
+						return api.IncMillisecond(data[k], date);
 					case "minute":
 					case "n":
-						result = api.IncMinute(d, dt);
-						break;
+						return api.IncMinute(data[k], date);
 					case "hour":
 					case "h":
-						result = api.IncHour(d, dt);
-						break;
+						return api.IncHour(data[k], date);
 					case "second":
 					case "s":
-						result = api.IncSecond(d, dt);
-						break;
+						return api.IncSecond(data[k], date);
 					case "day":
 					case "d":
-						result = api.IncDay(d, dt);
-						break;
+						return api.IncDay(data[k], date);
 					case "week":
 					case "w":
-						result = api.IncWeek(d, dt);
-						break;
+						return api.IncWeek(data[k], date);
 					case "month":
 					case "m":
-						result = api.IncMonth(d, dt);
-						break;
+						return api.IncMonth(data[k], date);
 					case "year":
 					case "y":
-						result = api.IncYear(d, dt);
-						break;
+						return api.IncYear(data[k], date);
 				}
-			}, true);
-
-			return result;
+			}
 		},
 		/**
-		 * 毫秒增量
+		 * Inc time dependence in millisecond
 		 *
-		 * @param {number} value 增加量
-		 * @param {date} [date] 基准时间
+		 * @param {number} value
+		 * @param {date} [date] <reference time>
 		 * @returns {date}
 		 */
-		IncMillisecond: (value, date) => {
-			value = jShow.isNumber(value) ? value : 1;
-			date = jShow.isDate(date) ? new Date(date) : new Date();
+		IncMillisecond (value, date) {
+			let num = $.isNumber(value) ? value : 1;
+			let val = $.isDate(date) ? new Date(date.getTime()) : new Date();
 
-			date.setTime(date.getTime() + value);
+			val.setTime(val.getTime() + num);
 
-			return date;
+			return val;
 		},
 		/**
-		 * 秒增量
+		 * Inc time dependence in second
 		 *
-		 * @param {number} value 增加量
-		 * @param {date} [date] 基准时间
+		 * @param {number} value
+		 * @param {date} [date] <reference time>
 		 * @returns {date}
 		 */
-		IncSecond:      (value, date) => api.IncMillisecond(value * 1000, date),
+		IncSecond (value, date) {
+			return api.IncMillisecond(value * 1000, date);
+		},
 		/**
-		 * 分钟增量
+		 * Inc time dependence in minute
 		 *
-		 * @param {number} value 增加量
-		 * @param {date} [date] 基准时间
+		 * @param {number} value
+		 * @param {date} [date] <reference time>
 		 * @returns {date}
 		 */
-		IncMinute:      (value, date) => api.IncMillisecond(value * 60000, date),
+		IncMinute (value, date) {
+			return api.IncMillisecond(value * 60000, date);
+		},
 		/**
-		 * 小时增量
+		 * Inc time dependence in hour
 		 *
-		 * @param {number} value 增加量
-		 * @param {date} [date] 基准时间
+		 * @param {number} value
+		 * @param {date} [date] <reference time>
 		 * @returns {date}
 		 */
-		IncHour:        (value, date) => api.IncMillisecond(value * 3600000, date),
+		IncHour (value, date) {
+			return api.IncMillisecond(value * 3600000, date);
+		},
 		/**
-		 * 天增量
+		 * Inc time dependence in day
 		 *
-		 * @param {number} value 增加量
-		 * @param {date} [date] 基准时间
+		 * @param {number} value
+		 * @param {date} [date] <reference time>
 		 * @returns {date}
 		 */
-		IncDay:         (value, date) => api.IncMillisecond(value * 86400000, date),
+		IncDay (value, date) {
+			return api.IncMillisecond(value * 86400000, date);
+		},
 		/**
-		 * 周增量，以7天为单位
+		 * Inc time dependence in week
 		 *
-		 * @param {number} value 增加量
-		 * @param {date} [date] 基准时间
+		 * @param {number} value
+		 * @param {date} [date] <reference time>
 		 * @returns {date}
 		 */
-		IncWeek:        (value, date) => api.IncDay(value * 7, date),
+		IncWeek (value, date) {
+			return api.IncDay(value * 7, date);
+		},
 		/**
-		 * 月增量
+		 * Inc time dependence in month
 		 *
-		 * @param {number} value 增加量
-		 * @param {date} [date] 基准时间
+		 * @param {number} value
+		 * @param {date} [date] <reference time>
 		 * @returns {date}
 		 */
-		IncMonth:       (value, date) => {
-			value = jShow.isNumber(value) ? value : 1;
-			date = jShow.isDate(date) ? new Date(date) : new Date();
+		IncMonth (value, date) {
+			let num = $.isNumber(value) ? value : 1;
+			let val = $.isDate(date) ? new Date(date) : new Date();
 
-			let obj = {y: date.getFullYear(), m: date.getMonth() + value, d: date.getDate()};
+			let obj = {y: val.getFullYear(), m: val.getMonth() + num, d: val.getDate()};
 
 			obj.y = obj.y + parseInt(obj.m / 12);
 			obj.m = obj.m % 12;
 
-			date.setDate(1);
+			val.setDate(1);
+
 			if (obj.m >= 0) {
-				date.setFullYear(obj.y);
-				date.setMonth(obj.m);
+				val.setFullYear(obj.y);
+				val.setMonth(obj.m);
 			}
 			else {
-				date.setFullYear(obj.y - 1);
-				date.setMonth(12 - obj.m);
+				val.setFullYear(obj.y - 1);
+				val.setMonth(12 - obj.m);
 			}
-			date.setDate(obj.d);
 
-			return date;
+			val.setDate(obj.d);
+
+			return val;
 		},
 		/**
-		 * 年增量
+		 * Inc time dependence in year
 		 *
-		 * @param {number} value 增加量
-		 * @param {date} [date] 基准时间
+		 * @param {number} value
+		 * @param {date} [date] <reference time>
 		 * @returns {date}
 		 */
-		IncYear:        (value, date) => {
-			date = jShow.isDate(date) ? new Date(date) : new Date();
-			date.setFullYear(date.getFullYear() + (jShow.isNumber(value) ? value : 1));
+		IncYear (value, date) {
+			let num = $.isNumber(value) ? value : 1;
+			let val = $.isDate(date) ? new Date(date) : new Date();
 
-			return date;
+			val.setFullYear(val.getFullYear() + num);
+
+			return val;
 		},
 		/**
-		 * 时间间隔
+		 * Difference time between dt1 and dt2
 		 *
 		 * @param {date} dt1
 		 * @param {date} dt2
-		 * @param {string} [type=d] 间隔类型，默认是毫秒
+		 * @param {string} [type=d] <dec type>
 		 * @returns {number}
 		 */
-		Dec:            (dt1, dt2, type) => {
-			type = type === void(0) ? dt2 : type;
-
+		Dec (dt1, dt2, type = dt2) {
 			switch (type) {
 				case "millisecond":
 				case "ms":
@@ -432,107 +506,172 @@ jShow.define(function (module, exports, require) {
 			}
 		},
 		/**
-		 * 毫秒间隔
+		 * Difference time between dt1 and dt2 in millisecond
 		 *
 		 * @param {date} dt1
 		 * @param {date} dt2
 		 * @returns {number}
 		 */
-		DecMillisecond: (dt1, dt2) => (jShow.isDate(dt1) ? dt1 : new Date()).getTime() - (jShow.isDate(dt2) ? dt2 : new Date()).getTime(),
+		DecMillisecond (dt1, dt2) {
+			let _dt1 = dt1;
+			let _dt2 = dt2;
+
+			if (!$.isDate(_dt1)) _dt1 = new Date();
+			if (!$.isDate(_dt2)) _dt2 = new Date();
+
+			return _dt1.getTime() - _dt2.getTime();
+		},
 		/**
-		 * 秒间隔
+		 * Difference time between dt1 and dt2 in second
 		 *
 		 * @param {date} dt1
 		 * @param {date} dt2
 		 * @returns {number}
 		 */
-		DecSecond:      (dt1, dt2) => parseInt(api.DecMillisecond(dt1, dt2) / 1000),
+		DecSecond (dt1, dt2) {
+			return parseInt(api.DecMillisecond(dt1, dt2) / 1000);
+		},
 		/**
-		 * 分钟间隔
+		 * Difference time between dt1 and dt2 in minute
 		 *
 		 * @param {date} dt1
 		 * @param {date} dt2
 		 * @returns {number}
 		 */
-		DecMinute:      (dt1, dt2) => parseInt(api.DecMillisecond(dt1, dt2) / 60000),
+		DecMinute (dt1, dt2) {
+			return parseInt(api.DecMillisecond(dt1, dt2) / 60000);
+		},
 		/**
-		 * 小时间隔
+		 * Difference time between dt1 and dt2 in hour
 		 *
 		 * @param {date} dt1
 		 * @param {date} dt2
 		 * @returns {number}
 		 */
-		DecHour:        (dt1, dt2) => parseInt(api.DecMillisecond(dt1, dt2) / 3600000),
+		DecHour (dt1, dt2) {
+			return parseInt(api.DecMillisecond(dt1, dt2) / 3600000);
+		},
 		/**
-		 * 天间隔
+		 * Difference time between dt1 and dt2 in day
 		 *
 		 * @param {date} dt1
 		 * @param {date} dt2
-		 * @param {boolean} [ms=false] 是否按实际毫秒算
+		 * @param {boolean} [ms=false] <is calc in millisecond>
 		 * @returns {number}
 		 */
-		DecDay:         (dt1, dt2, ms) => {
-			if (ms === true) {
-				dt1 = api.DateOf(dt1);
-				dt2 = api.DateOf(dt2);
+		DecDay (dt1, dt2, ms = false) {
+			let _dt1 = dt1;
+			let _dt2 = dt2;
+
+			if (!$.isDate(_dt1)) _dt1 = new Date();
+			if (!$.isDate(_dt2)) _dt2 = new Date();
+
+			if (ms !== true) {
+				_dt1 = api.DateOf(_dt1);
+				_dt2 = api.DateOf(_dt2);
 			}
 
-			return parseInt((dt1.getTime() - dt2.getTime()) / 86400000);
+			return parseInt((_dt1.getTime() - _dt2.getTime()) / 86400000);
 		},
 		/**
-		 * 周间隔
+		 * Difference time between dt1 and dt2 in week
 		 *
 		 * @param {date} dt1
 		 * @param {date} dt2
-		 * @param {boolean} [day=false] 是否按实际天数算
+		 * @param {boolean} [day=false] <is calc in day>
 		 * @returns {number}
 		 */
-		DecWeek:        (dt1, dt2, day) => {
-			let result = api.DecDay(dt1, dt2);
+		DecWeek (dt1, dt2, day = false) {
+			let _dt1 = dt1;
+			let _dt2 = dt2;
 
-			if (day === true) result -= api.DateOf(dt1).getDay() - api.DateOf(dt2).getDay();
+			if (!$.isDate(_dt1)) _dt1 = new Date();
+			if (!$.isDate(_dt2)) _dt2 = new Date();
 
-			return parseInt(result / 7);
+			let num = api.DecDay(_dt1, _dt2);
+
+			if (day === true) num -= _dt1.getDay() - _dt2.getDay();
+
+			return parseInt(num / 7);
 		},
 		/**
-		 * 月间隔
+		 * Difference time between dt1 and dt2 in month
 		 *
 		 * @param {date} dt1
 		 * @param {date} dt2
-		 * @param {boolean} [day=false] 是否按实际天数算
+		 * @param {boolean} [day=false] <is calc in day>
 		 * @returns {number}
 		 */
-		DecMonth:       (dt1, dt2, day) => {
-			let result;
+		DecMonth (dt1, dt2, day = false) {
+			let _dt1 = dt1;
+			let _dt2 = dt2;
 
-			if (day === true) result = parseInt(api.DecDay(dt1, dt2) / 30);
+			if (!$.isDate(_dt1)) _dt1 = new Date();
+			if (!$.isDate(_dt2)) _dt2 = new Date();
+
+			let num;
+
+			if (day === true) {
+				num = parseInt(api.DecDay(_dt1, _dt2) / 30);
+			}
 			else {
-				dt1 = api.DateOf(dt1);
-				dt2 = api.DateOf(dt2);
-
-				result = dt1.getFullYear() - dt2.getFullYear() - 1;
-				result = result * 12 + dt1.getMonth() + dt2.getMonth();
+				num = _dt1.getFullYear() - _dt2.getFullYear() - 1;
+				num = num * 12 + _dt1.getMonth() + _dt2.getMonth();
 			}
 
-			return result;
+			return num;
 		},
 		/**
-		 * 年间隔
+		 * Difference time between dt1 and dt2 in year
 		 *
 		 * @param {date} dt1
 		 * @param {date} dt2
-		 * @param {boolean} [day=false] 是否按实际天数算
+		 * @param {boolean} [day=false] <is calc in day>
 		 * @returns {number}
 		 */
-		DecYear:        (dt1, dt2, day) => {
-			let result;
+		DecYear (dt1, dt2, day = false) {
+			let _dt1 = dt1;
+			let _dt2 = dt2;
 
-			if (day === true) result = parseInt(api.DecDay(dt1, dt2) / 365);
-			else result = api.DateOf(dt1).getFullYear() - api.DateOf(dt2).getFullYear();
+			if (!$.isDate(_dt1)) _dt1 = new Date();
+			if (!$.isDate(_dt2)) _dt2 = new Date();
 
-			return result;
+			let num;
+
+			if (day === true) {
+				num = parseInt(api.DecDay(_dt1, _dt2) / 365);
+			}
+			else {
+				num = _dt1.getFullYear() - _dt2.getFullYear();
+			}
+
+			return num;
+		},
+		/**
+		 * Get yesterday date
+		 *
+		 * @param {date|number} value
+		 * @param {boolean} [day=true] <is abandon time part>
+		 * @returns {date}
+		 */
+		Yesterday (value, day = true) {
+			let data = api.IncDay(-1, value);
+
+			return day === true ? api.DateOf(data) : data;
+		},
+		/**
+		 * Get tomorrow date
+		 *
+		 * @param {date|number} value
+		 * @param {boolean} [day=true] <is abandon time part>
+		 * @returns {date}
+		 */
+		Tomorrow (value, day = true) {
+			let data = api.IncDay(1, value);
+
+			return day === true ? api.DateOf(data) : data;
 		}
 	};
 
 	return api;
-}, {module: module, exports: this}, [], "Date");
+}, module);

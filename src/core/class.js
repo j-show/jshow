@@ -6,116 +6,157 @@
  * Description:    Class Extensions
  * Log:
  * 2019-02-14    Init Class
+ * 2019-05-20    Format Code to jShow Style Guide
  * ==========================================
  */
-($ => {
+(owner => {
+	const $ = global.jShow;
+
 	/*
 	 ====================================
-	 = 类名: TObject
-	 = 功  能: 基类
-	 = 类函数：
-	 =   create    = 初始化函数
-	 = 对象属性：
-	 =   className  = 函数名
-	 =   errorMax   = 记录错误上限
-	 =   lastError  = 最后次错误记录
-	 = 对象函数：
-	 =   free       = 注销
-	 =   on         = 事件绑定
-	 =   off        = 事件移除
-	 =   call       = 事件调用
-	 =   getError   = 获得指定错误记录
-	 =   setError   = 设置错误记录
-	 =   clearError = 清除错误记录
+	 = Name: TObject
+	 = Info: 基类
+	 = Static Method：
+	 =   create     = static create function
+	 = Object Property:
+	 =   className  = get className (readonly)
+	 =   errorMax   = error messag limit
+	 =   eventMax   = event function limit
+	 = Object Method:
+	 =   free       = class object free
+	 =   on         = bind function by key
+	 =   off        = unbind function by key
+	 =   call       = call function
+	 =   getError   = get error message by index
+	 =   setError   = set error message by data
+	 =   lastError  = get last error message
+	 =   clearError = clear error message
 	 ====================================
 	 */
 	class TObject {
 		constructor () {
 			this.__className = "TObject";
 
-			this.__error_list = [];
-			this.__error_max = 5;
-			this.__event_list = {};
-			this.__event_max = 99;
+			this.__error__    = [];
+			this.__errorMax__ = 5;
+			this.__event__    = {};
+			this.__eventMax__ = 99;
 		}
 
 		free () {
-
+			this.__error__ = null;
+			this.__event__ = null;
 		}
 
-		on (key, func) {
+		valueOf () {
+			return this;
+		}
+
+		toString () {
+			return `${this.className} Object`;
+		}
+
+		addListenEvent (key, ...func) {
 			if (!$.isString(key)) return this;
+			if (!$.isArray(func, true)) return this;
 
-			let list = this.__event_list[key] || (this.__event_list[key] = []),
-				max  = this.__event_max,
-				each = (o, l, n, m) => {
-					for (let i = n, f; i < l.length; i++) {
-						switch ($.type(f = l[i], true)) {
-							case "function":
-								o.push(f);
-								if (o.length > m) o.pop();
-								break;
-							case "array":
-								each(o, f, 0, m);
-								break;
-						}
+			const each = (own, list, num, max) => {
+				for (let i = num, f; i < list.length; i++) {
+					f = list[i];
+
+					switch ($.type(f, true)) {
+						case "function":
+							own.push(f);
+							if (own.length > max) own.pop();
+							break;
+						case "array":
+							each(own, f, 0, max);
+							break;
 					}
-				};
+				}
+			};
 
-			each(list, arguments, 1, max);
+			let list = this.__event__[key];
+
+			if (!list) {
+				list                = [];
+				this.__event__[key] = list;
+			}
+
+			each(list, func, 1, this.eventMax);
 
 			return this;
 		}
 
-		off (key, func) {
-			if (arguments.length < 1) this.__event_list = {};
-			else if (typeof(func) !== "function") this.__event_list[key] = [];
-			else {
-				let list = this.__event_list[key] || [];
+		removeListenEvent (key, func) {
+			try {
+				if (arguments.length < 1) {
+					this.__event__ = {};
+					return;
+				}
+
+				if (!$.isString(key)) return;
+
+				if (!$.isFunction(func)) {
+					this.__event__[key] = [];
+					return;
+				}
+
+				let list = this.__event__[key] || [];
 
 				for (let i = 0; i < list.length;) {
 					if (Object.is(func, list[i])) list.splice(i, 1);
-					else i++;
+					else i += 1;
 				}
 			}
-
-			return this;
+			finally {
+				return this;
+			}
 		}
 
-		async call (key, arg) {
-			const dtd  = $.Deferred(true),
-				  list = this.__event_list[key] || [];
+		on (key, ...func) {
+			return this.addListenEvent(key, ...func);
+		}
 
-			arg = Array.prototype.slice.call(arguments, 1);
-			if (arg.length === 1 && $.isArray(arg[0])) arg = arg[0];
+		off (key, func) {
+			return this.removeListenEvent(key, ...func);
+		}
+
+		async call (key, ...arg) {
+			const dtd  = $.Deferred(true);
+			const list = this.__event__[key] || [];
 
 			try {
+				let owner = arg.length > 0 ? arg[0] : this;
+
 				for (let i = 0, f; i < list.length; i++) {
-					switch ($.type(f = list[i], true)) {
+					f = list[i];
+					switch ($.type(f, true)) {
 						case "function":
-							list[i].apply(this, arg);
+							list[i].apply(owner, arg);
 							break;
 						case "asyncfunction":
-							await list[i].apply(this, arg);
+							await list[i].apply(owner, arg);
 							break;
 					}
 				}
+
+				dtd.resolve(key);
 			}
 			catch (e) {
 				dtd.reject(e);
 			}
 
-			dtd.resolve(key);
-
 			return dtd.promise();
 		}
 
 		getError (index) {
-			let list = this.__error_list;
+			const list = this.__error__;
 
-			if (!$.isNumber(index, {min: 0, max: list.length})) return null;
+			if (list.length < 1) return null;
+			if (!$.isNumber(index, {min: 0, max: list.length - 1})) return null;
 
-			return index < list.length ? list[index] : null;
+			return list[index];
 		}
 
 		setError (level, code = level, msg = code) {
@@ -123,22 +164,35 @@
 			if (!$.isNumber(code)) code = -1;
 			if (!$.isString(msg)) msg = "";
 
-			let list = this.__error_list,
-				max  = this.__error_max,
-				err  = {level, code, msg};
+			const list = this.__error__;
+			const max  = this.errorMax;
+
+			let err = {level, code, msg};
 
 			while (list.length > max) list.shift();
 			list.push(err);
 
-			this.call("error", [err]);
+			this.call("error", err);
+
+			return err;
+		}
+
+		lastError () {
+			const list = this.__error__;
+
+			if (list.length < 1) return null;
 
 			return list[list.length - 1];
 		}
 
 		clearError () {
-			this.__error_list = [];
+			this.__error__ = [];
 
 			return this;
+		}
+
+		get [Symbol.toStringTag] () {
+			return this.className;
 		}
 
 		get className () {
@@ -146,23 +200,35 @@
 		}
 
 		get errorMax () {
-			return this.__error_max;
+			return this.__errorMax__;
 		}
 
 		set errorMax (value) {
 			if (!$.isNumber(value, {min: 1, max: 99})) return;
+			if (value === this.errorMax) return;
 
-			this.__error_max = value;
+			this.__errorMax__ = value;
 
-			let list = this.__error_list;
+			const list = this.__error__;
 
 			while (list.length > value) list.shift();
 		}
 
-		get lastError () {
-			let list = this.__error_list;
+		get eventMax () {
+			return this.__eventMax__;
+		}
 
-			return list.length > 0 ? list[list.length - 1] : null;
+		set eventMax (value) {
+			if (!$.isNumber(value, {min: 1, max: 99})) return;
+			if (value === this.__eventMax__) return;
+
+			this.__eventMax__ = value;
+
+			const list = this.__event__;
+
+			$.each(list, d => {
+				while (d.length > value) d.shift();
+			});
 		}
 
 		static create () {
@@ -172,124 +238,166 @@
 
 	/*
 	 ====================================
-	 = 类名: TSeal
-	 = 功  能: 密封类生成
-	 = 对象属性：
-	 =   className = 函数名
-	 = 对象函数：
-	 =   clone     = 复制本体
-	 =   Create    = 初始化
+	 = Name: TSeal
+	 = Info: The sealed class is mounted in prototype way, and the method of sealing is not in accordance with the specification
+	 =
+	 = @WARN: this class like TObject
+	 =
+	 = Object Method:
+	 =   clone     = copy this object
+	 =   create    = create object, like constructor
 	 ====================================
 	 */
-	$.TSeal = (() => {
-		const initClassError = function () {
-				  if (this.getError || this.setError || this.lastError) return;
-				  this.__error__ = [];
-				  this.errorMax = 5;
-				  this.getError = function (index) {
-					  index = $.isNumber(index, {min: 0}) ? index : -1;
+	TSeal = (() => {
+		const clsError = function initClassError () {
+			if (this.getError || this.setError || this.lastError) return;
 
-					  let list = this.__error__;
+			this.__error__ = [];
+			this.errorMax  = 5;
+			this.getError  = function getError (index = -1) {
+				const list = this.__error__;
+				let num    = Number(index);
 
-					  return list.length < 1 ? null : list[index < 0 ? list.length - 1 : index];
-				  };
-				  this.setError = function (level, code, msg) {
-					  if (arguments.length < 2) code = level;
-					  if (arguments.length < 3) msg = code;
+				if (list.length < 1) return null;
 
-					  if (!$.has(level, ["log", "info", "error"])) level = "log";
-					  if (!$.isNumber(code)) code = -1;
-					  if (!$.isString(msg)) msg = "";
+				if (!$.isNumber(num, {min: 0, max: list.length - 1})) num = list.length - 1;
 
-					  let list = this.__error__,
-						  err  = {level, code, msg};
+				return list[num];
+			};
+			this.setError  = function setError (level, code = level, msg = code) {
+				if (!$.has(level, ["log", "info", "error"])) level = "log";
+				if (!$.isNumber(code)) code = -1;
+				if (!$.isString(msg)) msg = "";
 
-					  while (list.length >= this.errorMax) list.shift();
-					  list.push(err);
+				const list = this.__error__;
+				const max  = this.errorMax;
 
-					  this.call("error", [err]);
+				let err = {level, code, msg};
 
-					  return list[list.length - 1];
-				  };
-				  this.lastError = function () {
-					  let list = this.__error__;
+				while (list.length >= max) list.shift();
+				list.push(err);
 
-					  return list.length > 0 ? list[list.length - 1] : null;
-				  };
-			  },
-			  initClassEvent = function () {
-				  if (this.on || this.off || this.call) return;
-				  this.__event__ = {};
-				  this.on = function (key, func) {
-					  let each = (o, l, n) => {
-							  for (let i = n, f; i < l.length; i++) {
-								  f = l[i];
+				this.call("error", [err]);
 
-								  switch ($.type(f, true)) {
-									  case "function":
-										  o.push(f);
-										  break;
-									  case "array":
-										  each(o, f, 0);
-										  break;
-								  }
-							  }
-						  },
-						  list = this.__event__[key] || (this.__event__[key] = []);
+				return err;
+			};
+			this.lastError = function () {
+				const list = this.__error__;
 
-					  each(list, arguments, 1);
+				if (list.length < 1) return null;
 
-					  return this;
-				  };
-				  this.off = function (key, func) {
-					  if (arguments.length == 0) this.__event__ = {};
-					  else if (typeof(func) != "function") this.__event__[key] = [];
-					  else {
-						  let list = this.__event__[key];
+				return list[list.length - 1];
+			};
+		};
+		const clsEvent = function initClassEvent () {
+			if (this.on || this.off || this.call) return;
 
-						  if (list && list.length > 0) {
-							  for (let i = 0; i < list.length; i++) {
-								  if (func !== list[i]) i++;
-								  else list.splice(i, 1);
-							  }
-						  }
-					  }
+			this.__event__ = {};
+			this.eventMax  = 99;
+			this.on        = function (key, ...func) {
+				if (!$.isString(key)) return this;
+				if (!$.isArray(func, true)) return this;
 
-					  return this;
-				  };
-				  this.call = function (key, arg) {
-					  let list = this.__event__[key];
+				const each = (own, list, num, max) => {
+					for (let i = num, f; i < list.length; i++) {
+						f = list[i];
 
-					  if (list && list.length > 0) {
-						  if (arguments.length < 2) arg = [];
-						  else if (!$.isArray(arg)) arg = [arg];
+						switch ($.type(f, true)) {
+							case "function":
+								own.push(f);
+								if (own.length > max) own.pop();
+								break;
+							case "array":
+								each(own, f, 0, max);
+								break;
+						}
+					}
+				};
 
-						  for (let i = 0; i < list.length; i++) list[i].apply(this, arg);
-					  }
+				let list = this.__event__[key];
 
-					  return this;
-				  };
-			  };
+				if (!list) {
+					list                = [];
+					this.__event__[key] = list;
+				}
+
+				each(list, func, 1, this.eventMax);
+
+				return this;
+			};
+			this.off       = function (key, func) {
+				try {
+					if (arguments.length < 1) {
+						this.__event__ = {};
+						return;
+					}
+
+					if (!$.isString(key)) return;
+
+					if (!$.isFunction(func)) {
+						this.__event__[key] = [];
+						return;
+					}
+
+					let list = this.__event__[key] || [];
+
+					for (let i = 0; i < list.length;) {
+						if (Object.is(func, list[i])) list.splice(i, 1);
+						else i += 1;
+					}
+				}
+				finally {
+					return this;
+				}
+			};
+			this.call      = async function (key, ...arg) {
+				const dtd  = $.Deferred(true);
+				const list = this.__event__[key] || [];
+
+				try {
+					let owner = arg.length > 0 ? arg[0] : this;
+
+					for (let i = 0, f; i < list.length; i++) {
+						f = list[i];
+						switch ($.type(f, true)) {
+							case "function":
+								list[i].apply(owner, arg);
+								break;
+							case "asyncfunction":
+								await list[i].apply(owner, arg);
+								break;
+						}
+					}
+
+					dtd.resolve(key);
+				}
+				catch (e) {
+					dtd.reject(e);
+				}
+
+				return dtd.promise();
+			};
+		};
 
 		function TSeal () {}
 
-		TSeal.extend = function (childAPI) {
+		TSeal.extend    = function (childAPI) {
 			if (!$.isObject(childAPI)) throw new Error(console.error("[TSeal] object is null"));
 
-			const className   = childAPI.className || "TSeal",
-				  parentClass = TSeal,
-				  initChild   = function () {
-					  initClassError.call(this);
-					  initClassEvent.call(this);
+			const className   = childAPI.className || "TSeal";
+			const parentClass = TSeal;
+			const initChild   = function initClass (...arg) {
+				clsError.call(this);
+				clsEvent.call(this);
 
-					  this["create"].apply(this, arguments);
+				if (this.create) this.create.apply(this, arg);
 
-					  return this;
-				  };
+				return this;
+			};
 
 			let childClass = null;
 
-			eval("childClass=function " + className + "(){return initChild.apply(this,arguments);}");
+			eval(`childClass=function ${className}(...arg){return initChild.apply(this,arg);}`);
 
 			childClass.prototype = Object.create(parentClass.prototype);
 			childClass.className = className;
@@ -307,9 +415,12 @@
 		TSeal.className = "TSeal";
 		TSeal.prototype = {
 			className: "TSeal",
-			create:    function () { return this; },
-			free:      function () {},
-			clone:     function () { return $.clone(this, true); }
+			create () { return this; },
+			free () {},
+			clone () { return $.clone(this, true); },
+			valueOf () { return this; },
+			toString () { return `${this.className} Object`; },
+			get [Symbol.toStringTag] () { return this.className; }
 		};
 
 		return TSeal;
@@ -317,33 +428,42 @@
 
 	/*
 	 ====================================
-	 = 类名: TCache
-	 = 功  能：缓存类，基于Buffer进行缓存循环运用
-	 = 继  承：TObject
-	 = 类函数：
-	 =   create    = 初始化函数
-	 = 对象属性：
-	 =   max       = 最大缓冲大小
-	 =   index     = 当前数据位
-	 =   length    = 有效数据长度
-	 =   offset    = 空白数据起始位
-	 =   surplus   = 剩余缓冲大小
-	 = 对象函数：
-	 =   valueOf   = 真实数据块
-	 =   clear     = 清空缓存
-	 =   resize    = 数据整理
-	 =   push      = 推入数据
-	 =   remove    = 删除数据
+	 = Name:   TCache
+	 = Info：  Perform cache looping by Buffer
+	 = Extend：TObject
+	 = Static Method:
+	 =   create    = static create function
+	 = Object Property:
+	 =   max       = cache buffer limit
+	 =   index     = real data start position of cache
+	 =   length    = real data length
+	 =   offset    = block cache start position of cache
+	 =   surplus   = surplus block length
+	 = Object Method:
+	 =   valueOf   = cache buffer
+	 =   clear     = clear data
+	 =   resize    = resize data position
+	 =   push      = push data to cache
+	 =   remove    = remove data to cache
+	 =   parse     = parse real data, extend must rewrite this method
+	 = Object Event:
+	 =   data      = output data event
+	 =   discard   = discard data event
 	 ====================================
 	 */
 	class TCache extends TObject {
-		constructor (size) {
+		/**
+		 * 缓存初始化，可以设置最大缓存
+		 *
+		 * @param {number} [size=128] 最大缓存，单位字节(取值32 <= size <= 10K)
+		 */
+		constructor (size = 128) {
 			super();
 
 			this.__className = "TCache";
 
-			this._max = $.isNumber(size, {min: 32, max: 10240}) ? size : 128;
-			this._index = 0;
+			this._max    = $.isNumber(size, {min: 32, max: 10240}) ? size : 128;
+			this._index  = 0;
 			this._length = 0;
 
 			this._cache = Buffer.alloc(this._max);
@@ -351,58 +471,156 @@
 
 		free () {
 			this._cache = null;
+
+			super.free();
 		}
 
 		valueOf () {
 			return this._cache;
 		}
 
-		resize (force) {
-			if (force === true) this.clear();
-			else {
-				if (this._length > 0) this.valueOf().copy(this.valueOf(), 0, this.index, this.offset);
+		/**
+		 * 返回缓存内容
+		 *
+		 * @param {string} [encoding=utf8] 返回字符串编码形式
+		 * @returns {string}
+		 */
+		toString (encoding = "utf8") {
+			return this._cache.toString(encoding, this.index, this.offset);
+		}
+
+		/**
+		 * 调准数内容，返回可用剩余空间大小
+		 *
+		 * @param {number} [len=0] 调整数字，=0 时进行数据移动，<surplus 时移动index
+		 * @returns {number}
+		 */
+		resize (len = 0) {
+			let val = $.isNumber(len, {min: 0}) ? len : 0;
+
+			if (val === 0) {
+				const data = this._cache;
+
+				if (this.length > 0) data.copy(data, 0, this.index, this.offset);
 
 				this._index = 0;
+			}
+			else if (val < this.surplus) {
+				this._index += len;
+				this._length -= len;
+			}
+			else {
+				this._index  = 0;
+				this._length = 0;
 			}
 
 			return this.surplus;
 		}
 
 		clear () {
-			this._index = 0;
+			this._index  = 0;
 			this._length = 0;
 
 			return this;
 		}
 
+		/**
+		 * 循环读取数据buf，并同步调用parse函数进行数据识别及输出
+		 *
+		 * @param {buffer} buf
+		 * @returns {TCache}
+		 */
 		push (buf) {
-			let offset = buf.byteOffset,
-				count  = buf.byteLength,
-				write;
+			const data = this._cache;
+
+			let offset = buf.byteOffset;
+			let count  = buf.byteLength;
+			let write  = 0;
 
 			while (count > 0) {
-				write = Math.min(count, (write = this.surplus) > 0 ? write : this.resize());
-				if (write < 1) write = this.resize(true);
+				write = this.surplus;
+				if (write < 1) write = this.resize();
 
-				buf.copy(this.valueOf(), this.offset, offset, offset + write);
+				write = Math.min(count, write);
+				if (write < 1) {
+					this.call("discard", data.slice(this.index, this.offset), true);
+					write = this.resize(this.max);
+				}
 
+				buf.copy(data, this.offset, offset, offset + write);
 				this._length += write;
+
 				offset += write;
 				count -= write;
 
-				if (this.parse) this.parse();
+				write = this.parse();
+				if (write > 0) {
+					this.call("data", data.slice(this.index, write + this.index));
+					this.resize(write);
+				}
+				else if (write < 0) {
+					this._index += -(write);
+				}
 			}
 
 			return this;
 		}
 
-		remove (size) {
-			size = Math.min(size, this.length);
+		/**
+		 * 删除数据，允许删除数据中段
+		 *
+		 * @param {object|number} opt
+		 *    @param {number} [opt.start] 删除起始位置
+		 *    @param {number} [opt.size] 删除长度
+		 * @returns {TCache}
+		 */
+		remove (opt) {
+			let {
+					start = 0,
+					len   = this.length
+				} = opt;
 
-			this._index += size;
-			this._length -= size;
+			if ($.isNumber(opt, {min: 0})) len = opt;
+
+			start = Number(start);
+			len   = Number(len);
+
+			if (isNaN(len) || len < 1) return this;
+
+			if (isNaN(start)) start = 0;
+
+			if (start < 0) start += this.length;
+			if (start < 0 || start >= this.length) return this;
+
+			if (start > 0) {
+				let end = start + len;
+
+				if (this.length - end > 0) {
+					let data = this._cache;
+
+					data.copy(data, start + this.index, end + this.index, this.length - end);
+				}
+
+				this._length -= len;
+			}
+			else {
+				this.resize(len);
+			}
+
+			if (size !== 0) this.resize(size);
 
 			return this;
+		}
+
+		/**
+		 * 数据解析，需要在子类中改下，否则输出所有数据内容，不需要处理时，返回0
+		 * >0 时，输出返回数量的数据，触发data事件
+		 * <0 时，删除返回数量的数据
+		 *
+		 * @returns {number}
+		 */
+		parse () {
+			return this.length;
 		}
 
 		get max () {
@@ -436,62 +654,70 @@
 
 	/*
 	 ====================================
-	 = 类名: TList
-	 = 功  能: 队列类
-	 = 继  承：TObject
-	 = 对象属性：
-	 =   length    = 数据长度
-	 =   type      = 数据限定类型
-	 =   first     = 首个数据
-	 =   last      = 尾端数据
-	 = 对象函数：
-	 =   clear     = 清空数据
-	 =   sort      = 数据排序，接受自定义排序函数
-	 =   each      = 数据检索，遍历函数为true时，删除遍历项
-	 =   set       = 设置数据，校验数据类型
-	 =   del       = 删除数据
-	 =   add       = 添加数据，校验数据类型
-	 =   addList   = 批量添加数据
-	 =   push      = 先进后出，添加数据
-	 =   pop       = 先进后出，获取数据
-	 =   put       = 先进先出，添加数据
-	 =   poll      = 先进先出，获取数据
+	 = Name:   TList
+	 = Info:   Queue class by Array, you must limit type when init class
+	 = Extend：TObject
+	 = Object Propertry：
+	 =   length    = data length
+	 =   type      = limit tyoe
+	 =   first     = first data
+	 =   last      = last data
+	 = Object Method：
+	 =   clear     = clear data
+	 =   sort      = sort data，can custom sort function
+	 =   each      = each data, if callback return is false, delete item
+	 =   set       = set data, check data type
+	 =   del       = delete data
+	 =   add       = add data, check data type
+	 =   addList   = add datas by list
+	 =   push      = add data, from list tail
+	 =   pop       = get and delete data, from list tail
+	 =   put       = add data from list head
+	 =   poll      = get and delete data, from list head
 	 ====================================
 	 */
-	(function (TObject) {
+	const TList = (function (TObject) {
 		const isType   = (obj, type) => {
-				  let objType;
+			if (!type || type === "*") return true;
 
-				  if (!type || type == "*" || (type == (objType = $.type(obj, true)))) return true;
-				  if (type == "object" && (objType == "null" || objType == "undefined")) return false;
-				  if (objType != "object") return false;
-				  if (type == "date" && obj.className == "TChinaDate") return true;
+			let otype = $.type(obj, true);
 
-				  return false;
-			  },
-			  fmtIndex = (index, def, max) => {
-				  index = $.isNumber(index) ? index : def;
+			if (type === otype) return true;
 
-				  if (index < 0) index = -1;
-				  else if (index >= max) index = max;
+			switch (type) {
+				case "date":
+					if (otype === "TChinaDate" || obj.className === "TChinaDate") return true;
+					break;
+			}
 
-				  return index;
-			  },
-			  setData  = (own, data) => {
-				  let i;
+			return false;
+		};
+		const fmtIndex = (index, def, max) => {
+			let num = $.isNumber(index) ? index : def;
 
-				  for (i = 0; i < own.length; i++) delete own[i];
-				  for (i = 0; i < data.length; i++) own[i] = data[i];
+			if (num < 0) num = -1;
+			else if (num >= max) num = max;
 
-				  if ((own.length = data.length) > 0) {
-					  own.first = own[0];
-					  own.last = own[own.length - 1];
-				  }
-				  else {
-					  own.first = null;
-					  own.last = null;
-				  }
-			  };
+			return num;
+		};
+		const addData  = (own, value, index) => {
+			const len = own.length - 1;
+
+			if (index !== len) {
+				for (let i = len; i >= index; i--) own[i] = own[i - 1];
+			}
+
+			own[index] = value;
+		};
+		const delData  = (own, index, old) => {
+			const len = own.length - 1;
+
+			if (index !== len) {
+				for (let i = index; i <= len; i++) own[i] = own[i + 1];
+			}
+
+			delete own[old];
+		};
 
 		class TList extends TObject {
 			constructor (type) {
@@ -499,40 +725,82 @@
 
 				this.__className = "TList";
 
-				this._data = [];
-				this._type = $.isString(type) ? type : "*";
-				this._length = 0;
+				this._value = [];
+				this._type  = "*";
+
+				if ($.isString(type)) this._type = type;
 			}
 
 			free () {
-				super.free();
+				this._value = null;
 
-				this.clear();
+				super.free();
 			}
 
 			valueOf () {
-				return this._data;
+				return this._value;
+			}
+
+			toString () {
+				return this._value.toString();
+			}
+
+			[Symbol.iterator] () {
+				const data = this._value;
+
+				return (function* () {
+					for (let i = 0; i < data.length; i++) {
+						yield data[i];
+					}
+				})();
+			}
+
+			get length () {
+				return this._value.length;
+			}
+
+			get type () {
+				return this._type;
+			}
+
+			get first () {
+				const data = this._value;
+
+				if (data.length < 1) return null;
+
+				return data[0];
+			}
+
+			get last () {
+				const data = this._value;
+
+				if (data.length < 1) return null;
+
+				return data[data.length - 1];
 			}
 
 			clear () {
-				this._data = [];
-				this._length = 0;
+				const data = this._value;
 
-				setData(this, this._data);
+				for (let i = 0; i < data.length; i++) delete this[i];
+
+				this._value = [];
 
 				this.call("clear");
 
 				return this;
 			}
 
-			sort (func) {
-				func = $.isFunction(func, true) ? func : null;
+			sort (callback) {
+				let func = callback;
 
-				let list = this.valueOf();
+				if (!$.isFunction(func)) func = null;
 
-				list.sort.apply(this, func || []);
+				const data = this._value;
 
-				setData(this, list);
+				data.sort.apply(this, func || []);
+
+				for (let i = 0; i < data.length; i++) this[i] = data[i];
 
 				this.call("sort");
 
@@ -540,7 +808,7 @@
 			}
 
 			each (func) {
-				if (!$.isFunction(func, true)) return this;
+				if (!$.isFunction(func)) return this;
 
 				let list = this.valueOf();
 
@@ -555,14 +823,17 @@
 				return this;
 			}
 
-			set (index, data) {
-				index = fmtIndex(index, -1, this.length);
+			set (index, value) {
+				if (!isType(value, this.type)) return -1;
 
-				if (!isType(data, this.type)) return -1;
+				const data = this._value;
 
-				this._data[index] = data;
+				if (!$.isNumber(index, {min: 0, max: data.length - 1})) return -1;
 
-				this.call("set", {index: index, data: data});
+				data[index] = value;
+				this[index] = value;
+
+				this.call("set", {index: index, data: value});
 
 				return index;
 			}
@@ -570,101 +841,115 @@
 			del (index) {
 				if (this.length === 0) return null;
 
-				index = fmtIndex(index, 0, this.length - 1);
+				const data = this._value;
+				let len    = data.length - 1;
 
-				let list = this.valueOf(),
-					result;
+				if (!$.isNumber(index, {min: 0, max: len})) return -1;
 
-				if (index <= 0) result = list.shift();
-				else if (index >= this.length - 1) result = list.pop();
+				let item;
+
+				if (index === len) {
+					item = data.pop();
+				}
+				else if (index === 0) {
+					item = data.shift();
+				}
 				else {
-					result = list[index];
-
-					list.splice(index, 1);
+					item = data[inde];
+					data.splice(index, 1);
 				}
 
-				setData(this, list);
+				delData(this, index, len);
 
-				this.call("del", {index: index});
+				this.call("del", {index: index, data: item});
 
-				return result;
+				return item;
 			}
 
-			add (data, index) {
-				index = fmtIndex(index, this.length, this.length);
+			add (value, index) {
+				if (!isType(value, this.type)) return -1;
 
-				if (!isType(data, this.type)) return -1;
+				let num  = fmtIndex(index, this.length, this.length);
+				let data = this._value;
+				let len  = data.length;
 
-				let list = this.valueOf();
+				if (num <= 0) {
+					data.unshift(value);
 
-				if (index <= 0) {
-					list.unshift(data);
-
-					index = 0;
+					num = 0;
 				}
-				else if (index >= this.length) list.push(data);
-				else list.splice(index, 0, data);
+				else if (num >= len) {
+					data.push(value);
 
-				setData(this, list);
+					num = len;
+				}
+				else {
+					data.splice(num, 0, value);
+				}
 
-				this.call("add", {index: index, data: data});
+				addData(this, value, num);
 
-				return index;
+				this.call("add", {index: num, data: value});
+
+				return num;
 			}
 
-			addList (data, index) {
-				if ($.isArray(data) && data.length > 0) {
-					index = fmtIndex(index, this.length, this.length);
+			addList (value, index, desc = false) {
+				if (!$.isArray(value, {min: 1})) return this;
 
-					let _this = this;
+				const data = value;
+				if (desc === true) data.reverse();
 
-					$.each(data, function (d, i) {
-						_this.add(d, index + i);
-					});
-				}
+				let num = this.length;
+				num     = fmtIndex(index, num, num);
+
+				for (let i = 0; i < data.length; i++) this.add(data[i], num + i);
 
 				return this;
 			}
 
-			push (data) {
-				return this.add(data, this.length);
+			push (...value) {
+				return this.addList(value, this.length);
 			}
 
 			pop () { return this.del(this.length); }
 
-			put (data) { return this.add(data, 0); }
+			put (...value) { return this.addList(value, 0, true); }
 
 			poll () { return this.del(0); }
 
-			get length () {
-				return this._length;
-			}
-
-			get type () {
-				return this._type;
+			static create (type) {
+				return (new TList(type));
 			}
 		}
 
-		$.TList = TList;
+		return TList;
 	})(TObject);
 
 	/*
 	 ====================================
-	 = 类名: TChinaDate
-	 = 功  能: 中文日期类
-	 = 类函数：
-	 =   toString   = 转换为字符串
-	 = 对象属性：
-	 =   Year,Month,Day,Term,Zodiac  = 年，月，日，节气，星座
-	 =   CYear,CMonth,CDay           = 农历年，农历月，农历日
-	 =   IsLeapYear                  = 是否是闰年
-	 = 对象函数：
-	 =   getTime    = 获取当前毫秒数
-	 =   setTime    = 设置当前时间
-	 =   toString   = 转换为字符串
+	 = Name:   TChinaDate
+	 = Info:   Chinese date
+	 = Extend: TObject
+	 = Static Method：
+	 =   toString   = conver to string
+	 = Object Propertry：
+	 =   Year        = year
+	 =   Month       = month
+	 =   Day         = day
+	 =   Term        = term of chinese date
+	 =   Zodiac      = zodizc of chinese date
+	 =   CYear       = year of chinese date
+	 =   CMonth      = month of chinese date
+	 =   CDay        = day of chinese date
+	 =   IsLeapYear  = is leap year
+	 = Object Method：
+	 =   getTime    = get object millisecond
+	 =   setTime    = set time
+	 =   toString   = output format string by fmt
 	 ====================================
 	 */
-	(function (TObject) {
+	const TChinaDate = (function (TObject) {
 		const ct          = {
 				  monthInfoDt: new Date(1900, 0, 31),
 				  monthInfo:   [
@@ -736,17 +1021,23 @@
 				this._nt = {year: 0, month: 0, day: 0};
 				this._dt = new Date();
 
-				this._Year = "";
-				this._Month = "";
-				this._Day = "";
-				this._Term = "";
-				this._Zodiac = "";
-				this._cYear = "";
-				this._cMonth = "";
-				this._cDay = "";
+				this._Year       = "";
+				this._Month      = "";
+				this._Day        = "";
+				this._Term       = "";
+				this._Zodiac     = "";
+				this._cYear      = "";
+				this._cMonth     = "";
+				this._cDay       = "";
 				this._IsLeapYear = false;
 
 				this.setTime(dt);
+			}
+
+			free () {
+				this._nt = null;
+
+				super.free();
 			}
 
 			get Year () {
@@ -789,126 +1080,19 @@
 				return this.getTime();
 			}
 
-			getTime () {
-				return this._dt.getTime();
-			}
-
-			setTime (dt) {
-				const getLeapYearMonth = year => {
-						  return ct.monthInfo[year - ct.monthInfoDt.getFullYear()] & 0xf;
-					  },
-					  getLeapYearDay   = year => {
-						  return getLeapYearMonth(year) ? ((ct.monthInfo[year - ct.monthInfoDt.getFullYear()] & 0x10000) ? 30 : 29) : 0;
-					  },
-					  getTotalYearDay  = year => {
-						  let sum   = 348,
-							  minfo = ct.monthInfo[year - ct.monthInfoDt.getFullYear()];
-
-						  for (let i = 0x8000; i > 0x8; i >>= 1) sum += (minfo & i) ? 1 : 0;
-
-						  return sum + getLeapYearDay(year);
-					  },
-					  getTotalMonthDay = (year, month) => {
-						  return (ct.monthInfo[year - ct.monthInfoDt.getFullYear()] & (0x10000 >> month)) ? 30 : 29;
-					  };
-
-				switch ($.type(dt, true)) {
-					case "date":
-						this._dt.setTime(dt.getTime());
-						break;
-					case "number":
-						this._dt.setTime(dt);
-						break
-				}
-
-				let temp   = 0,
-					leap   = 0,
-					offset = parseInt((this._dt - ct.monthInfoDt) / 86400000),
-					nt     = this._nt,
-					i;
-
-				nt.year = 0;
-				nt.month = 14;
-				nt.day = offset + 40;
-
-				for (i = ct.monthInfoDt.getFullYear(); i < ct.monthInfoDt.getFullYear() + ct.monthInfo.length && offset > 0; i++) {
-					temp = getTotalYearDay(i);
-
-					offset -= temp;
-					nt.month += 12;
-				}
-
-				if (offset < 0) {
-					offset += temp;
-					i--;
-					nt.month -= 12;
-				}
-
-				nt.year = i;
-				this._IsLeapYear = false;
-
-				leap = getLeapYearMonth(i);
-
-				for (i = 1; i < 13 && offset > 0; i++) {
-					if (leap > 0 && i == (leap + 1) && !this._IsLeapYear) {
-						i--;
-						this._IsLeapYear = true;
-						temp = getLeapYearDay(nt.year);
-					}
-					else
-						temp = getTotalMonthDay(nt.year, i);
-
-					if (this._IsLeapYear && i == (leap + 1)) this._IsLeapYear = false;
-
-					offset -= temp;
-
-					if (!this._IsLeapYear) nt.month++;
-				}
-
-				if (offset < 0) {
-					offset += temp;
-
-					i--;
-					nt.month--;
-				}
-				else if (offset == 0 && leap > 0 && i == leap + 1) {
-					if (!this._IsLeapYear) {
-						i--;
-						nt.month--;
-					}
-
-					this._IsLeapYear = !this._IsLeapYear;
-				}
-
-				this._cYear = getTGDZ(nt.year - 1864);
-				this._cMonth = getTGDZ(nt.month);
-				this._cDay = getTGDZ(nt.day);
-
-				nt.month = i;
-				nt.day = offset + 1;
-
-				this._Year = getYear(nt.year);
-				this._Month = getMonth(nt.month, this._IsLeapYear);
-				this._Day = getDay(nt.day);
-				this._Term = getTerm(nt.year, nt.month, this._dt.getDate());
-				this._Zodiac = getZodiac(this._dt.getFullYear());
-
-				return this;
-			}
-
 			toString (fmt) {
 				let result = $.isString(fmt) ? fmt : "Y年(Z) M月 D T";
 
-				if (/((CY|CM|Y|M|D|T|Z)+)/.test(result)) {
+				if (/((CY|CM|CD|CT|CZ|Y|M|D)+)/.test(result)) {
 					fmt = {
 						"CY+": this.cYear,
 						"CM+": this.cMonth,
 						"CD+": this.cDay,
+						"CT+": this.Term,
+						"CZ+": this.Zodiac,
 						"Y+":  this.Year,
 						"M+":  this.Month,
-						"D+":  this.Day,
-						"T+":  this.Term,
-						"Z+":  this.Zodiac
+						"D+":  this.Day
 					};
 
 					$.each(fmt, function (d, k) {
@@ -921,6 +1105,124 @@
 				return result.trim();
 			}
 
+			getTime () {
+				return this._dt.getTime();
+			}
+
+			setTime (dt) {
+				const getLeapYearMonth = year => {
+					return ct.monthInfo[year - ct.monthInfoDt.getFullYear()] & 0xf;
+				};
+				const getLeapYearDay   = year => {
+					return getLeapYearMonth(year) ? ((ct.monthInfo[year - ct.monthInfoDt.getFullYear()] & 0x10000) ? 30 : 29) : 0;
+				};
+				const getTotalYearDay  = year => {
+					let sum   = 348,
+						minfo = ct.monthInfo[year - ct.monthInfoDt.getFullYear()];
+
+					for (let i = 0x8000; i > 0x8; i >>= 1) sum += (minfo & i) ? 1 : 0;
+
+					return sum + getLeapYearDay(year);
+				};
+				const getTotalMonthDay = (year, month) => {
+					return (ct.monthInfo[year - ct.monthInfoDt.getFullYear()] & (0x10000 >> month)) ? 30 : 29;
+				};
+
+				switch ($.type(dt, true)) {
+					case "date":
+						this._dt.setTime(dt.getTime());
+						break;
+					case "number":
+						this._dt.setTime(dt);
+						break;
+				}
+
+				let nt     = this._nt;
+				let temp   = 0;
+				let offset = parseInt((this._dt - ct.monthInfoDt) / 86400000);
+				let i      = 0;
+
+				nt.year  = 0;
+				nt.month = 14;
+				nt.day   = offset + 40;
+
+				(({monthInfoDt, monthInfo}) => {
+					let len = monthInfoDt.getFullYear() + monthInfo.length;
+
+					for (i = monthInfoDt.getFullYear(); i < len && offset > 0; i++) {
+						temp = getTotalYearDay(i);
+
+						offset -= temp;
+						nt.month += 12;
+					}
+
+					if (offset < 0) {
+						offset += temp;
+						i--;
+						nt.month -= 12;
+					}
+				})(ct);
+
+				nt.year          = i;
+				this._IsLeapYear = false;
+
+				let leap = getLeapYearMonth(nt.year);
+				if (leap < 1) throw "TChinaDate setTime Error";
+
+				this._IsLeapYear = (leap => {
+					let _leap = false;
+
+					for (i = 1; i < 13 && offset > 0; i++) {
+						if (i === leap && !_leap) {
+							i--;
+							_leap = true;
+							temp  = getLeapYearDay(nt.year);
+						}
+						else {
+							temp = getTotalMonthDay(nt.year, i);
+						}
+
+						if (_leap && i === leap) _leap = false;
+
+						offset -= temp;
+
+						if (!_leap) nt.month++;
+					}
+
+					if (offset < 0) {
+						offset += temp;
+
+						i--;
+						nt.month--;
+					}
+					else if (offset === 0 && i === leap) {
+						if (!_leap) {
+							i--;
+							nt.month--;
+						}
+
+						_leap = !_leap;
+					}
+
+					return _leap;
+				})(leap + 1);
+
+				this._cYear  = getTGDZ(nt.year - 1864);
+				this._cMonth = getTGDZ(nt.month);
+				this._cDay   = getTGDZ(nt.day);
+
+				nt.month = i;
+				nt.day   = offset + 1;
+
+				this._Year   = getYear(nt.year);
+				this._Month  = getMonth(nt.month, this._IsLeapYear);
+				this._Day    = getDay(nt.day);
+				this._Term   = getTerm(nt.year, nt.month, this._dt.getDate());
+				this._Zodiac = getZodiac(this._dt.getFullYear());
+
+				return this;
+			}
+
 			static toString (fmt, date = fmt) {
 				if (!$.isDate(date)) date = new Date();
 
@@ -928,58 +1230,62 @@
 			}
 		}
 
-		$.TChinaDate = TChinaDate;
+		return TChinaDate;
 	})(TObject);
 
 	/*
 	 ====================================
-	 = 类名: TGuid
-	 = 功  能: Guid类
-	 = 对象函数：
-	 =   New          = 获取新Guid
-	 =   toString     = 获取字符串
-	 =   toByteArray  = 获取字节数据
+	 = Name:   TGuid
+	 = Info:   simulate guid
+	 = Extend: TObject
+	 = Static Method:
+	 =   toByteArray  = conver to unit8array
+	 =   New          = get TGuid object with random value
+	 =   Empty        = get TGuid object with fill 0
+	 = Object Method：
+	 =   New          = set random value
+	 =   toString     = conver to string
+	 =   toByteArray  = conver to unit8array
 	 ====================================
 	 */
 	class TGuid extends TObject {
-		constructor (data) {
+		constructor (value) {
 			super();
 
 			this.__className = "TGuid";
 
 			this._value = [0, 0, 0, 0, 0];
-			this._gd = [4, 2, 2, 2, 6];
+			this._gd    = [4, 2, 2, 2, 6];
 
-			switch ($.type(data, true)) {
+			let data = [];
+
+			switch ($.type(value, true)) {
 				case "string":
-					data = data.replace(/^(\{)|(\})$/g, "").split("-");
+					data = value.replace(/^\{|\}$/g, "").split("-");
+					data = data.map(v => parseInt(`0x${v}`));
 					break;
 				case "array":
-					if (data.length === this._gd.length) break;
-				default:
-					data = [];
+					if (data.length === this._gd.length) data = value;
 					break;
 			}
 
 			if (data.length !== this._gd.length) return;
 
-			let fmt = (d, i, t, list) => {
-				switch (t) {
-					case "string":
-						d = "0x" + d;
-						break;
-					case "number":
-						if (!isNaN(d = parseInt(d))) break;
-					default:
-						return false;
-				}
+			for (let i = 0, gd = this._gd, d; i < data.length; i++) {
+				d = data[i];
 
-				if (d < 0 || d >= Math.pow(2, 8 * gd[i])) return false;
+				if (!$.isNumber(d, {min: 0, max: (2 ** (8 * gd[i])) - 1})) return;
+				data[i] = d;
+			}
 
-				list[i] = d;
-			};
+			this._value = data;
+		}
 
-			if ($.each(data, fmt)) this._value = data;
+		free () {
+			this._value = null;
+			this._gd    = null;
+
+			super.free();
 		}
 
 		valueOf () {
@@ -987,42 +1293,52 @@
 		}
 
 		toString () {
-			const com   = (s, l) => {
-					  while (s.length < l * 2) s = "0" + s;
+			const com  = (s, l) => {
+				while (s.length < l * 2) s = "0" + s;
 
-					  return s;
-				  },
-				  value = this._value,
-				  gd    = this._gd;
+				return s;
+			};
+			const data = this._value;
+			const gd   = this._gd;
 
 			let result = [];
 
-			for (let i = 0; i < value.length; i++) result.push(com(value[i].toString(16), gd[i]));
+			for (let i = 0, d; i < data.length; i++) {
+				d = data[i].toString(16);
+				d = com(d, gd[i]);
+				result.push(d);
+			}
 
 			return result.join("-");
 		}
 
 		toByteArray () {
-			const des   = (r, d) => {
-					  d.reverse();
-					  for (let i = 0; i < d.length; i++) if (d[i].length > 0) r.push(parseInt("0x" + d[i]));
-				  },
-				  value = this._value;
+			const des  = (r, d) => {
+				d.reverse();
+				for (let i = 0; i < d.length; i++) if (d[i].length > 0) r.push(parseInt("0x" + d[i]));
+			};
+			const data = this._value;
 
 			let result = [];
 
-			for (let i = 0; i < value.length; i++) des(result, value[i].toString(16).split(/(\w{2})/g));
+			for (let i = 0, d; i < data.length; i++) {
+				d = data[i].toString(16);
+
+				des(result, d.split(/\w{2}/g));
+			}
 
 			return result;
 		}
 
 		New () {
-			const rmd = l => Math.round(Math.random() * (Math.pow(2, 8 * l) - 1)),
-				  gd  = this._gd;
+			const rmd = l => Math.round(Math.random() * ((2 ** (8 * l)) - 1));
+			const gd  = this._gd;
 
 			let result = [];
 
 			for (let i = 0; i < gd.length; i++) result.push(rmd(gd[i]));
+
+			this._value = result;
 
 			return this;
 		}
@@ -1038,36 +1354,54 @@
 		static New () {
 			return (new TGuid()).New();
 		}
+
+		static Empty () {
+			return (new TGuid());
+		}
 	}
 
-	$.TObject = TObject;
-	$.TCache = TCache;
-	$.TGuid = TGuid;
+	const api = {
+		TObject,
+		TSeal,
+		TCache,
+		TList,
+		TChinaDate,
+		TGuid,
+		/**
+		 * 队列函数
+		 *
+		 * @param {string} [type=*] 限定类型，对输入内容进行过滤
+		 * @returns {object}
+		 */
+		List (type) {
+			return new $.TList(type);
+		},
+		/**
+		 * 中文日期函数
+		 *
+		 * @param {date} [dt=now]
+		 * @returns {object}
+		 */
+		ChinaDate (dt) {
+			return new $.TChinaDate(dt);
+		},
+		/**
+		 * New Guid
+		 *
+		 * @returns {object}
+		 */
+		NewGuid () {
+			return $.TGuid.New();
+		},
+		/**
+		 * Empty Guid
+		 *
+		 * @returns {object}
+		 */
+		EmptyGuid () {
+			return $.TGuid.Empty();
+		}
+	};
 
-	/**
-	 * 队列函数
-	 *
-	 * @param {string} [type=*] 限定类型，对输入内容进行过滤
-	 * @returns {object}
-	 */
-	$.List = type => (new $.TList(type));
-	/**
-	 * 中文日期函数
-	 *
-	 * @param {date} [dt=now]
-	 * @returns {object}
-	 */
-	$.ChinaDate = dt => (new $.TChinaDate(dt));
-	/**
-	 * New Guid
-	 *
-	 * @returns {object}
-	 */
-	$.NewGuid = () => (new $.TGuid()).New();
-	/**
-	 * Empty Guid
-	 *
-	 * @returns {object}
-	 */
-	$.EmptyGuid = () => (new $.TGuid());
-})(this);
+	jShow = {...owner, ...api};
+})(jShow);

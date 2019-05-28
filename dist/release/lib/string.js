@@ -3,105 +3,101 @@
  * Name:           String
  * Author:         jShow
  * CreTime:        2014-11-20
- * Description:    字符串
+ * Description:    String function
  * Log
- * 2015-06-08    优化模块结构
+ * 2015-06-08    Optimize module structure
+ * 2019-05-27    Format Code to jShow Style Guide
  * ==========================================
  */
-jShow.define(function (module, exports, require) {
+define("String", ["RegExp"], function (require, module, REGEXP) {
 	"use strict";
 
-	const ULETTER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-		  LLETTER = "abcdefghijklmnopqrstuvwxyz",
-		  NUMBER  = "0123456789",
-		  SYMBOL  = "!@#$%^&*()",
-		  ULL     = ULETTER + LLETTER,
-		  ULN     = ULETTER + NUMBER,
-		  LLN     = LLETTER + NUMBER,
-		  ULLN    = ULETTER + LLETTER + NUMBER,
-		  ULLNS   = ULETTER + LLETTER + NUMBER + SYMBOL;
+	const $ = jShow;
 
-	let api;
+	const ULETTER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	const LLETTER = "abcdefghijklmnopqrstuvwxyz";
+	const NUMBER  = "0123456789";
+	const SYMBOL  = "!@#$%^&*()";
 
-	api = {
+	const api = {
 		ULETTER: ULETTER,
 		LLETTER: LLETTER,
 		NUMBER:  NUMBER,
 		SYMBOL:  SYMBOL,
-		ULL:     ULL,
-		ULN:     ULN,
-		LLN:     LLN,
-		ULLN:    ULLN,
-		ULLNS:   ULLNS,
+		ULL:     `${ULETTER}${LLETTER}`,
+		ULN:     `${ULETTER}${NUMBER}`,
+		LLN:     `${LLETTER}${NUMBER}`,
+		ULLN:    `${ULETTER}${LLETTER}${NUMBER}`,
+		ULLNS:   `${ULETTER}${LLETTER}${NUMBER}${SYMBOL}`,
 		/**
-		 * 截取文字
+		 * Gets part of string
 		 *
-		 * @public
 		 * @param {string} value
 		 * @param {number|object} [opt]
-		 *    @param {number} [opt.start=0] 开始字符数，0开始
-		 *    @param {number} [opt.len=value.length] 截取长度
+		 *    @param {number} [opt.start=0] <start position>
+		 *    @param {number} [opt.len=value.length] <get length>
 		 * @returns {string}
 		 */
-		Mid:     (value, opt) => {
-			let start, len;
+		Mid (value, opt) {
+			let data = String(value || "");
 
-			switch (typeof(opt)) {
-				case "object":
-					if (opt) {
-						start = opt.start;
-						len = opt.len;
-					}
-					break;
-				case "number":
-					start = opt;
-					break;
-			}
-			value = String(value || "");
-			start = parseInt(jShow.isNumber(start) ? (start < 0 ? value.length : 0) + start : 0);
-			len = parseInt(jShow.isNumber(len) && len > 0 ? len : value.length) + start;
+			let {
+					start = 0,
+					len   = data.length
+				} = opt;
 
-			return value.substring(start, Math.min(len, value.length));
+			if (typeof(opt) === "number") start = opt;
+
+			if (!$.isNumber(start)) start = 0;
+			if (!$.isNumber(len, {min: 0})) len = data.length;
+
+			if (start < 0) start += data.length;
+			if (start < 0) start = 0;
+
+			len += start;
+
+			return data.substring(start, Math.min(len, data.length));
 		},
 		/**
-		 * 左截
+		 * Gets part of string from left
 		 *
-		 * @public
 		 * @param {string} value
-		 * @param {number} len 截取长度
+		 * @param {number} len <get length>
 		 * @returns {string}
 		 */
-		Left:    (value, len) => api.Mid(value, {len: len}),
+		Left (value, len) {
+			return api.Mid(value, {len});
+		},
 		/**
-		 * 右截
+		 * Gets part of string from right
 		 *
-		 * @public
 		 * @param {string} value
-		 * @param {number} len 截取长度
+		 * @param {number} len <get length>
 		 * @returns {string}
 		 */
-		Right:   (value, len) => api.Mid(value, {start: 0 - len}),
+		Right (value, len) {
+			let start = $.isNumber(len, {min: 0}) ? -len : 0;
+
+			return api.Mid(value, {start});
+		},
 		/**
-		 * 两端过滤
+		 * Trim of string
 		 *
-		 * @public
 		 * @param {string} value
 		 * @param {Array|string|number|object} [opt]
-		 *    @param {Array|string} [opt.char] 过滤内容，默认过滤空格
-		 *    @param {number} [opt.mode=0] 过滤模式，0=两端，1=左，2=右
+		 *    @param {Array|string} [opt.char] <trim char, default blank space>
+		 *    @param {number} [opt.mode=0] <filter mode>
 		 * @returns {string}
 		 */
-		Trim:    (value, opt) => {
-			let char, mode,
-				rxp;
+		Trim (value, opt = 0) {
+			let data = String(value || "");
 
-			switch (jShow.type(opt, true)) {
-				case "object":
-					if (opt) {
-						char = opt.char;
-						mode = opt.mode;
-					}
-					break;
+			let {
+					char,
+					mode = 0
+				} = opt;
+
+			switch ($.type(opt, true)) {
 				case "string":
 				case "array":
 					char = opt;
@@ -110,162 +106,164 @@ jShow.define(function (module, exports, require) {
 					mode = opt;
 					break;
 			}
-			value = String(value || "");
 
-			switch (jShow.type(char, true)) {
+			let rxp;
+
+			switch ($.type(char, true)) {
 				default:
 					rxp = "(\\s+)";
 					break;
 				case "string":
-					if (char.length == 0) return value;
+					if (char.length === 0) return data;
+
 					char = [char];
 				case "array":
-					if (char.length == 0) return value;
+					if (char.length === 0) return data;
 
-					rxp = "(" + jShow.RegExp.Filter(char, false) + ")";
+					rxp = REGEXP.Filter(char, false);
+					rxp = `(${rxp})`;
 					break;
 			}
 
 			switch (mode) {
+				default:
+					rxp = `^${rxp}|${rxp}$`;
+					break;
 				case 1:
-					rxp = "^" + rxp;
+					rxp = `^${rxp}`;
 					break;
 				case 2:
-					rxp = rxp + "$";
-					break;
-				default:
-					rxp = "^" + rxp + "|" + rxp + "$";
+					rxp = `${rxp}$`;
 					break;
 			}
 
-			return value.replace(new RegExp(rxp, "g"), "");
+			return data.replace(new RegExp(rxp, "g"), "");
 		},
 		/**
-		 * 左端过滤
+		 * Trim of string from left
 		 *
-		 * @public
 		 * @param {string} value
-		 * @param {Array|string} char 过滤内容，默认过滤空格
+		 * @param {Array|string} char <trim char, default blank space>
 		 * @returns {string}
 		 */
-		LTrim:   (value, char) => api.Trim(value, {char: char, mode: 1}),
+		LTrim (value, char) {
+			return api.Trim(value, {char, mode: 1});
+		},
 		/**
-		 * 右端过滤
+		 * Trim of string from right
 		 *
-		 * @public
 		 * @param {string} value
-		 * @param {Array|string} char 过滤内容，默认过滤空格
+		 * @param {Array|string} char <trim char, default blank space>
 		 * @returns {string}
 		 */
-		RTrim:   (value, char) => api.Trim(value, {char: char, mode: 2}),
+		RTrim (value, char) {
+			return api.Trim(value, {char, mode: 2});
+		},
 		/**
-		 * 字符串格式化
+		 * Format of string by value
 		 *
-		 * @public
-		 * @param {string} value 格式规则
-		 * @param {*} param 格式内容
+		 * @param {string} value <format rules>
+		 * @param {*} param <fill value>
 		 * @returns {string}
 		 */
-		Format:  function (value) {
-			if (!(value = String(value || "")) || arguments.length < 2) return value;
+		Format (value, ...param) {
+			let data = String(value || "");
 
-			let param = [];
-			for (let i = 1; i < arguments.length; i++) param.push(arguments[i]);
-			if (param.length == 1 && !jShow.isSimple(param[0])) param = param[0];
+			if (!data || param.length === 0) return data;
 
-			jShow.each(param, (d, k, t) => {
+			if (param.length === 1 && $.isArray(param[0])) param = param[0];
+
+			$.each(param, (d, k, t) => {
 				switch (t) {
 					case "array":
-						value = api.Format(value, d);
+						data = api.Format(data, d);
 						break;
 					case "object":
-						value = d.reg && typeof(d.text) == "string" ? value.replace(new RegExp(d.reg, "g"), d.text) : api.Format(value, d);
+						data = d.reg && typeof(d.text) === "string" ? data.replace(new RegExp(d.reg, "g"), d.text) : api.Format(data, d);
 						break;
 					case "null":
 					case "undefined":
 						d = "";
 					default:
-						value = value.replace(new RegExp("\{(" + k + ")\}", "g"), d);
+						data = data.replace(new RegExp(`\{(k)\}`, "g"), d);
 						break;
 				}
 			}, true);
 
-			return value;
+			return data;
 		},
 		/**
-		 * 过滤敏感字符，返回字符串
+		 * Filter of string
 		 *
-		 * @public
 		 * @param {string} value
-		 * @param {Array|object|string} param 过滤内容
+		 * @param {Array|object|string} param <filter code>
 		 * @returns {string}
 		 */
-		Filter:  function (value) {
-			if (!(value = String(value || ""))) return value;
+		Filter (value, ...param) {
+			let data = String(value || "");
 
-			let param = [];
-			for (let i = 1; i < arguments.length; i++) param.push(arguments[i]);
-			if (!param.length) param = ["\'", "\"", "<", ">"];
+			if (!data) return data;
 
-			jShow.each(param, (d, k, t) => {
+			if (param.length === 0) param = ["\'", "\"", "<", ">"];
+
+			$.each(param, (d, k, t) => {
 				switch (t) {
 					case "string":
-						value = value.replace(jShow.RegExp.Filter(d), "");
+						data = data.replace(REGEXP.Filter(d), "");
 						break;
 					case "array":
-						(d = [].concat(d)).unshift(value);
-						value = api.Filter.apply(this, d);
+						d = [].concat(d);
+						d.unshift(data);
+
+						data = api.Filter(...d);
 						break;
 					case "object":
-						if (d.reg && typeof (d.text) == "string") value = value.replace(new RegExp(d.reg, "g"), d.text);
+						if (d.reg && typeof (d.text) === "string") data = data.replace(new RegExp(d.reg, "g"), d.text);
 						break;
 				}
 			}, true);
 
-			return value;
+			return data;
 		},
 		/**
-		 * 字符串长度
+		 * Get length of string
 		 *
-		 * @public
 		 * @param {string} value  {String}
-		 * @param {boolean} [chs=true] 是否识别中文为2字符
+		 * @param {boolean} [chs=true] <is parse chinese as 2 word>
 		 * @returns {number}
 		 */
-		Length:  (value, chs) => {
+		Length (value, chs = true) {
 			let result = 0;
 
-			if (!jShow.isString(value)) return result;
+			if (!$.isString(value)) return result;
 
 			if (chs !== false) {
-				chs = value.match(/[^ -~]/g);
+				chs    = value.match(/[^ -~]/g);
 				result = chs ? chs.length : 0;
 			}
 
 			return value.length + result;
 		},
 		/**
-		 * 扩展indexOf，无substr为识别是否包含中文，返回特征字符所在位置或首个中文所在位置
+		 * Extension String.indexOf()
 		 *
-		 * @public
+		 * @FIX: logic is not strict
+		 *
 		 * @param {string} value
 		 * @param {string|number|object} [opt]
-		 *    @param {string} [opt.sub] 检索内容
-		 *    @param {number} [opt.start=0] 检索起始点
-		 *    @param {number} [opt.len] 检索长度
-		 * @returns {number} 不存在返回-1
+		 *    @param {string} [opt.sub] <search value>
+		 *    @param {number} [opt.start=0] <search start position>
+		 *    @param {number} [opt.len] <search length>
+		 * @returns {number}
 		 */
-		IndexOf: (value, opt) => {
-			let sub, start, len;
+		IndexOf (value, opt) {
+			let {
+					sub,
+					start = 0,
+					len
+				} = opt;
 
 			switch (typeof(opt)) {
-				case "object":
-					if (opt) {
-						sub = opt.sub;
-						start = opt.start;
-						len = opt.len;
-					}
-					break;
 				case "string":
 					sub = opt;
 					break;
@@ -273,21 +271,23 @@ jShow.define(function (module, exports, require) {
 					len = opt;
 					break;
 			}
-			value = String(value || "");
-			start = parseInt(jShow.isNumber(start) ? (start < 0 ? value.length : 0) + start : 0);
 
-			if (jShow.isString(sub, true)) {
-				len = api.Mid(value, {start: start, len: len}).indexOf(sub);
+			let data = String(value || "");
+
+			start = parseInt($.isNumber(start) ? (start < 0 ? data.length : 0) + start : 0);
+
+			if ($.isString(sub, true)) {
+				len = api.Mid(data, {start: start, len: len}).indexOf(sub);
 
 				if (len >= 0) return len + start;
 			}
 			else {
-				len = parseInt(jShow.isNumber(len) && len > 0 ? len : value.length * 2);
+				len = parseInt($.isNumber(len) && len > 0 ? len : data.length * 2);
 
-				for (let i = 0, n = 0, l = start + len, rxp = /[^ -~]/; i < value.length; i++, n++) {
-					if (rxp.test(value[i])) {
+				for (let i = 0, n = 0, l = start + len, rxp = /[^ -~]/; i < data.length; i++, n++) {
+					if (rxp.test(data[i])) {
 						if (n >= start || n < l) return i;
-						else n++;
+						else n += 1;
 					}
 				}
 			}
@@ -295,68 +295,73 @@ jShow.define(function (module, exports, require) {
 			return -1;
 		},
 		/**
-		 * 扩展substr，返回字符串，中文占2字，遇半字时截取整字
+		 * Extension String.substr()
 		 *
-		 * @public
 		 * @param {string} value
 		 * @param {number|object} [opt]
-		 *    @param {number} [opt.start] 检索起始点
-		 *    @param {number} [opt.len] 检索长度
+		 *    @param {number} [opt.start] <search start position>
+		 *    @param {number} [opt.len=50] <search length>
+		 *    @param {boolean} [opt.chs=true] <is parse chinese as 2 word>
 		 * @returns {string}
 		 */
-		SubStr:  (value, opt) => {
-			let result = "",
-				start, len;
+		SubStr (value, opt) {
+			let data = String(value || "");
+
+			let {
+					start = 0,
+					len   = 50,
+					chs   = true
+				} = opt;
 
 			switch (typeof(opt)) {
-				case "object":
-					if (opt) {
-						start = opt.start;
-						len = opt.len;
-					}
-					break;
 				case "number":
 					len = opt;
 					break;
 			}
-			start = parseInt(jShow.isNumber(start) ? (start < 0 ? value.length : 0) + start : 0);
-			len = parseInt(jShow.isNumber(len) && len > 0 ? len : value.length * 2);
 
-			for (let i = 0, n = 0, l = start + len, rxp = /[^ -~]/, d; i < value.length && n < l; i++, n++) {
-				d = value[i];
+			if (!$.isNumber(start)) start = 0;
+			if (!$.isNumber(len, {min: 0})) len = 50;
+			chs = chs === true;
 
-				if (n >= start && n < l) result += d;
+			if (start < 0) start += data.length;
+			if (start < 0) start = 0;
 
-				if (rxp.test(d)) n++;
-			}
+			len += start;
 
-			return result;
+			let rxp    = /[^ -~]/;
+			let num    = 0;
+			let result = [];
+
+			data = [...data];
+			data.forEach(d => {
+				if (num >= start && num < len) result.push(d);
+				num += 1;
+				if (chs && rxp.test(d)) num += 1;
+			});
+
+			return result.join("");
 		},
 		/**
-		 * 添加后缀，返回内容长度<=len
+		 * Gets part of string and add suffix
 		 *
-		 * @public
 		 * @param {string} value
-		 * @param {number|string|boolean|object} opt 参数
-		 *    @param {number} [opt.start=0] 检索起始点
-		 *    @param {number} [opt.len=50] 检索长度
-		 *    @param {string} [opt.fix=...] 当长度超过要求时，尾部补充
-		 *    @param {boolean} [opt.chs=true] 是否识别中文为2字符
+		 * @param {number|string|boolean|object} opt
+		 *    @param {number} [opt.len=50] <get length>
+		 *    @param {string} [opt.fix=...] <suffix code>
+		 *    @param {boolean} [opt.chs=true] <is parse chinese as 2 word>
 		 * @returns {string}
 		 */
-		SubFix:  (value, opt) => {
-			let result = "",
-				len, fix, start, chs;
+		SubFix (value, opt) {
+			let data = String(value || "");
+
+			let {
+					start = 0,
+					len   = 50,
+					fix   = "...",
+					chs   = true
+				} = opt;
 
 			switch (typeof(opt)) {
-				case "object":
-					if (opt) {
-						start = opt.start;
-						len = opt.len;
-						fix = opt.fix;
-						chs = opt.chs;
-					}
-					break;
 				case "number":
 					len = opt;
 					break;
@@ -367,75 +372,94 @@ jShow.define(function (module, exports, require) {
 					chs = opt;
 					break;
 			}
-			start = parseInt(jShow.isNumber(start) ? (start < 0 ? value.length : 0) + start : 0);
-			len = parseInt(jShow.isNumber(len) && len > 0 ? len : 50);
-			fix = jShow.isString(fix, true) ? fix : "...";
-			chs = chs !== false;
 
-			for (let i = 0, n = 0, l = start + len, rxp = /[^ -~]/, d; i < value.length && n < l; i++, n++) {
-				d = value[i];
+			if (!$.isString(fix, true)) fix = "...";
 
-				if (n >= start && n < l) result += d;
-				if (chs && rxp.test(d)) n++;
-			}
+			let result = api.SubStr(data, {start, len, chs});
 
-			return result == value ? result : (result.substr(0, result.length - fix.length) + fix);
+			if (result === data || fix.length === 0) return result;
+
+			let rxp = /[^ -~]/;
+			let num = 0;
+
+			fix = [...fix];
+			fix.forEach(d => {
+				num += 1;
+				if (chs && rxp.test(d)) num += 1;
+			});
+
+			result = [...result];
+
+			result = result.reverse().filter(d => {
+				if (num < 1) return true;
+				num -= 1;
+				if (chs && rxp.test(d)) num -= 1;
+			});
+
+			return `${result.reverse().join("")}${fix.join("")}`;
 		},
 		/**
-		 * 随机字符
+		 * Get random of string
 		 *
-		 * @public
-		 * @param {number|boolean|object} opt 参数
-		 *    @param {string|Array} [opt.template] 创建模板
-		 *    @param {number} [opt.len=5] 随机字符个数
-		 *    @param {boolean} [opt.repeat=false] 是否允许重复
+		 * @param {number|boolean|object} opt
+		 *    @param {string|Array} [opt.template] <string template>
+		 *    @param {number} [opt.len=5] <return string length>
+		 *    @param {boolean} [opt.repeat=false] <is repeat of string>
 		 * @returns {String}
 		 */
-		Random:  opt => {
-			let rmd    = tpl => {
-					let r = Math.ceil(Math.random() * tpl.length);
+		Random (opt) {
+			let {
+					template,
+					tpl,
+					len    = 5,
+					repeat = false
+				} = opt;
 
-					if (r < 0) r = 0;
-					else if (r >= tpl.length) r = tpl.length - 1;
-
-					return r;
-				},
-				result = "",
-				template, len, repeat;
-
-			switch (jShow.type(opt, true)) {
-				case "object":
-					if (opt) {
-						template = opt.template;
-						len = opt.len;
-						repeat = opt.repeat;
-					}
-					break;
-				case "string":
-				case "array":
-					template = opt;
+			switch ($.type(opt, true)) {
+				case "boolean":
+					repeat = opt;
 					break;
 				case "number":
 					len = opt;
 					break;
-				case "boolean":
-					repeat = opt;
+				case "string":
+					template = [...opt];
+					break;
+				case "array":
+					template = opt;
 					break;
 			}
-			len = parseInt(jShow.isNumber(len) && len > 0 ? len : 5);
-			repeat = repeat === true;
-			template = jShow.isString(template) ? template.split("") : template;
-			if (!jShow.isArray(template)) template = ULLNS.split("");
 
-			for (let r; len; len--) {
+			if (!$.isArray(template)) {
+				if (typeof(tpl) === "string") tpl = [...tpl];
+				template = tpl;
+			}
+			if (!$.isArray(template)) template = api.ULLNS.split("");
+			if (!$.isNumber(len, {min: 0})) len = 5;
+			repeat = repeat === true;
+
+			const rmd = tpl => {
+				let r = Math.ceil(Math.random() * tpl.length);
+
+				if (r < 0) r = 0;
+				else if (r >= tpl.length) r = tpl.length - 1;
+
+				return tpl[r];
+			};
+
+			let result = [];
+
+			for (let r; len >= 0; len--) {
 				r = rmd(template);
-				result += template[r];
-				if (!repeat) template.splice(r, 1);
+				if (repeat || result.indexOf(r) < 0) {
+					result.push(d);
+					len -= 1;
+				}
 			}
 
-			return result;
+			return result.join("");
 		}
 	};
 
 	return api;
-}, {module: module, exports: this}, ["RegExp"], "String");
+}, module);
