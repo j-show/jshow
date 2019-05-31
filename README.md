@@ -24,6 +24,18 @@
 [jshow-dm]: https://img.shields.io/npm/dm/jshow.svg
 [jshow-ct]: https://img.shields.io/badge/chat-on%20discord-7289da.svg
 
+[jshow-svr-url]: https://github.com/j-show/jshow-svr
+[jshow-svr-npm]: https://npmjs.com/package/jshow-svr
+[jshow-svr-ver]: https://img.shields.io/npm/v/jshow-svr.svg
+
+[jshow-socket-url]: https://github.com/j-show/jshow-socket
+[jshow-socket-npm]: https://npmjs.com/package/jshow-socket
+[jshow-socket-ver]: https://img.shields.io/npm/v/jshow-socket.svg
+
+[jshow-nano-url]: https://github.com/j-show/jshow-nano
+[jshow-nano-npm]: https://npmjs.com/package/jshow-nano
+[jshow-nano-ver]: https://img.shields.io/npm/v/jshow-nano.svg
+
 ---
 
 # Supporting
@@ -41,16 +53,25 @@ Funds donated via Patreon go directly to support [jShow][jshow-url] You's full-t
 
 # Introduction
 
-jShow is an **open tool framework**. It's designed to support both `WebBrowser`, `Node.js` environment, it's composed of `core tool library` and `external components`.
+jShow is an **open tool framework**. It's designed to support both `WebBrowser`, `Node.js` environment, it's composed of `core tool library`,`external components`,`generator helper`.
 
 - **`core tool library`** It's like a Swiss army knife. It helps you simplify your code. Anyone can use it to create their own **tool library**.
 
 - **`external components`** Automatically identify environmental patterns, follow the light component principle, load the following components as needed
+	- `any to conver` conversion function, provide various types of fool conversion function
+	- `check & regexp` a variety of common checking functions
+	- `calc date` Extend the time conversion function and integrate some convenience functions
+	- `calc string` Extended string processing function for special recognition of double-byte characters
+	- `encryption` Common encryption and decryption calculation function, including hash, CRC and other common data calculation function
 	- `module loading framework` Modular development framework, with async function as the core, asynchronous load page module
 	- `front-end routing` Through simple configuration, the front-end routing structure is established and the single-page application is developed easily
 	- `DOM operation` Simple DOM operation object, fully compatible with [jQuery](https://jquery.com/) operation mode
 	- `gesture recognition` For Mobile terminal, simple gestures can be identified in series by setting to recognize complex gestures
-	- `tcp/http2 service` Provide TCP/HTTP2 backend services, fully compatible with [Koa@2](https://koajs.com/) middleware, integrated multilingual solutions.
+
+- **`generator helper`** As the core library of the entire jShow's Family, jshow provides a global installation method that can generate sample projects of the corresponding framework through parameters.
+	- [jshow-svr][jshow-svr-url] Provide HTTP/HTTPS/HTTP2 backend services, fully compatible with [Koa@2](https://koajs.com/) middleware, integrated multilingual solutions, RESTful API, MVC and other code mode.
+	- [jshow-socket][jshow-socket-url] Socket data flow framework is provided to support TCP/UDP/WebSocket data flow parsing operations.
+	- [jshow-nano][jshow-nano-url] Provide hardware operation, business process control, support GPIO/SPI/serial/bluetooth operation, integrate part of GPS,4g,QR module reading and writing
 
 ---
 
@@ -59,7 +80,49 @@ jShow is an **open tool framework**. It's designed to support both `WebBrowser`,
 
 | Project | Status | Description |
 |---|---|---|
-| [jShow][jshow-url] | [![jshow-ver]][jshow-npm] | jShow ecosystem core |
+| [jshow][jshow-url] | [![jshow-ver]][jshow-npm] | jShow ecosystem core |
+| [jshow-svr][jshow-svr-url] | [![jshow-svr-ver]][jshow-svr-npm] | HTTP Service Framework, compatible with HTTP/HTTPS/HTTP2 |
+| [jshow-socket][jshow-socket-url] | [![jshow-socket-ver]][jshow-socket-npm] | Socket Service Framework, compatible with TCP/UDP/WebSocket |
+| [jshow-nano][jshow-nano-url] | [![jshow-nano-ver]][jshow-nano-npm] | ARM Control Framework, compatible with GPIO/SPI/serial/bluetooth |
+
+---
+
+# Folder
+
+```
+──
+ └── gulpfile.js     //gulp script file
+ └── build.json      //modules configuration
+ └── dist            //output folder
+ └── src             //source folder
+ │ └── jShow.js      //main script file
+ │ └── Generator.js  //generator script file
+ │ └── loading.js    //external components configuration
+ │ └── core          //core tool library folder
+ │ └── lib           //external components folder
+ └── test            //mocha test folder
+```
+
+---
+
+# Install
+
+- `Code Mode`
+
+	```javascript
+	const jShow = require("jshow");
+	
+	console.log(jShow.version());
+	```
+	
+- `Generator Mode`
+	
+	```bash
+	$ npm install -g jshow
+	
+	// create RESTful api project
+	$ jshow svr init --package a /data/example_api
+	```
 
 ---
 
