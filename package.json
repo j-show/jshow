@@ -1,31 +1,37 @@
 {
-	"name": "jshow",
-	"description": "jshow Open Tools Framework",
-	"keywords": [
+	"name":                 "jshow",
+	"description":          "jshow Open Tools Framework",
+	"keywords":             [
 		"jshow",
 		"jShow"
 	],
-	"license": "MIT",
-	"homepage": "https://github.com/j-show/jshow",
-	"repository": {
+	"license":              "MIT",
+	"homepage":             "https://github.com/j-show/jshow",
+	"repository":           {
 		"type": "git",
-		"url": "https://github.com/j-show/jShow.git"
+		"url":  "https://github.com/j-show/jshow.git"
 	},
-	"bugs": {
-		"url": "https://github.com/j-show/jShow/issues"
+	"bugs":                 {
+		"url": "https://github.com/j-show/jshow/issues"
 	},
-	"dependencies": {},
-	"devDependencies": {
-		"del": "^4.0.0",
-		"gulp": "^4.0.0",
+	"optionalDependencies": {
+		"commander": "*"
+	},
+	"devDependencies":      {
+		"del":          "^4.0.0",
+		"gulp":         "^4.0.0",
 		"gulp-replace": "^1.0.0"
 	},
-	"scripts": {
-		"build": "gulp build",
-		"test": "gulp test && mocha test/"
+	"preferGlobal":         true,
+	"bin":                  {
+		"jshow": "Generator.js"
 	},
-	"version": "1.0.5",
-	"logs": {
+	"scripts":              {
+		"build": "gulp build",
+		"test":  "mocha test/"
+	},
+	"version":              "1.0.5",
+	"logs":                 {
 		"1.0.1": "project init",
 		"1.0.5": "Format Code to jShow Style Guide"
 	}

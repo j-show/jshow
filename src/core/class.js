@@ -248,7 +248,7 @@
 	 =   create    = create object, like constructor
 	 ====================================
 	 */
-	TSeal = (() => {
+	const TSeal = (() => {
 		const clsError = function initClassError () {
 			if (this.getError || this.setError || this.lastError) return;
 
