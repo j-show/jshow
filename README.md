@@ -98,6 +98,7 @@ jShow is an **open tool framework**. It's designed to support both `WebBrowser`,
  │ └── jShow.js      //main script file
  │ └── Generator.js  //generator script file
  │ └── loading.js    //external components configuration
+ │ └── bin           //generator script folder
  │ └── core          //core tool library folder
  │ └── lib           //external components folder
  └── test            //mocha test folder
@@ -129,13 +130,13 @@ jShow is an **open tool framework**. It's designed to support both `WebBrowser`,
 # Documentation
 
 
-To check out [live examples](https://jshow.org/example) and [wiki docs](https://github.com/j-show/jShow/wiki), visit [jshow.org](https://jshow.org).
+To check out [live examples](https://jshow.org/example/index-en.html) and [wiki docs](https://github.com/j-show/jShow/wiki), visit [jshow.org](https://jshow.org).
 
 ---
 
 # Questions
 
-For questions and support please use [the official forum](https://jshow.org/forum) or [community chat](https://jshow.org/chat). 
+For questions and support please use [the official forum](https://forum.jshow.org) or [community chat](https://chat.jshow.org). 
 The [issue](https://github.com/j-show/jShow/issues) list of this repo is **exclusively** for bug reports and feature requests.
 
 ---
