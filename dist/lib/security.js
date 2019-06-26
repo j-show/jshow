@@ -23,14 +23,27 @@ define("Security", ["Conver"], function (require, module, CONVER) {
 		 * Base64 encoder/decoder
 		 *
 		 * @param {string} value
-		 * @param {boolean} [enc=true] <is encoder>
+		 * @param {object|boolean} [opt] <option>
+		 *    @param {boolean} [opt.encode=true] <is encoder>
+		 *    @parma {boolean} [opt.safe] <when decode mode, safe return, always return>
 		 * @returns {string}
 		 */
-		Base64 (value, enc = true) {
-			let data = String(value);
+		Base64 (value, opt = true) {
+			let {
+					encode = true,
+					safe   = false
+				} = opt;
+
+			let data = String(value || "");
 			let arg  = {buf: true, str: true};
 
-			if (enc === true) {
+			switch (typeof(opt)) {
+				case "boolean":
+					encode = opt;
+					break;
+			}
+
+			if (encode === true) {
 				data = CONVER.toHex(data, "utf8");
 				data = CONVER.toString(data, arg);
 				data = (value => {
@@ -69,6 +82,7 @@ define("Security", ["Conver"], function (require, module, CONVER) {
 					return result.join("");
 				})(data);
 			}
+			else if (safe !== false && !$.isBase64(data)) {}
 			else {
 				data = (value => {
 					const char = [

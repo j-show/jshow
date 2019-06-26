@@ -9,15 +9,13 @@
  * 2019-05-20    Format Code to jShow Style Guide
  * ==========================================
  */
-(owner => {
-	const $ = global.jShow;
-
+(($, global) => {
 	if ($.mode !== $.MODE.Node) return;
 
 	const _require = (url, tag, owner) => owner[tag || url] = require(url);
 	const _define = (alias, deps = alias, factory = deps, owner = factory, exec = owner) => {
 		let modules = $.isArray(deps) ? [...deps] : [];
-		let func = factory;
+		let func    = factory;
 
 		modules.forEach((d, i) => {
 			modules[i] = $[d] || require(d);
@@ -40,7 +38,8 @@
 		define:    _define
 	};
 
-	jShow = {...owner, ...api};
+	jShow = {...$, ...api};
+	$     = jShow;
 
 	if (!global.define) global.define = api.define;
-})(jShow);
+})(jShow, global);

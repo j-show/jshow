@@ -1,10 +1,8 @@
-const fs      = require("fs");
-const path    = require("path");
-const del     = require("del");
-const gulp    = require("gulp");
-const replace = require("gulp-replace");
+const fs    = require("fs");
+const path  = require("path");
+const gulp  = require("gulp");
+const clean = require("gulp-clean");
 
-const delDest          = dest => del.sync(dest);
 const mkDest           = dest => {
 	if (fs.existsSync(dest)) return;
 
@@ -43,13 +41,14 @@ const readCode         = (cfg, src) => {
 	return code;
 };
 const initPackage      = (pkg, dist) => {
-	delete pkg.dependencies;
 	delete pkg.devDependencies;
 	delete pkg.scripts;
 
 	pkg.main = "jShow.js";
 
 	fs.writeFileSync(path.join(dist, "package.json"), JSON.stringify(pkg, null, 4));
+
+	console.log(` ├─ package.json`);
 };
 const initCore_Release = (src, dist, cfg, version) => {
 	let frame = readFile(src, "jShow.js");
@@ -65,61 +64,49 @@ const initCore_Release = (src, dist, cfg, version) => {
 			.replace("@version", version)
 			.replace('"@Loading";', code[1])
 	);
-};
-const initCore_Test    = (src, dist, cfg, version) => {
-	let frame = readFile(src, "jShow.js"),
-		code  = readCode(cfg.core, `${src}/core`);
 
-	fs.writeFileSync(
-		path.join(dist, "jShow.js"),
-		frame
-			.replace('"@Code";', code)
-			.replace("@version", version)
-			.replace('"@Loading";', "")
-	);
+	console.log(" ├─ jShow.js");
 };
 
-function clean () {
-	return new Promise(done => {
-		delDest(["./dist/*"]);
+gulp.task("clean", function () {
+	return gulp
+		.src(
+			[
+				"./dist/*"
+			],
+			{allowEmpty: true}
+		)
+		.pipe(clean({force: true}));
+});
 
-		done();
-	});
-}
-
-function build () {
+gulp.task("build", function () {
 	const src  = "./src";
-	const dest = "./dist/release";
+	const dest = "./dist";
 	const pkg  = require("./package.json");
 	const cfg  = require("./build.json");
 
-	delDest([dest + "/*"]);
 	mkDest(path.join(dest));
 
+	console.log(`─┬─ release ${pkg.version}`);
 	initCore_Release(src, dest, cfg, pkg.version);
+
+	// gulp.src(`${src}/Generator.js`).pipe(gulp.dest(dest));
+	// console.log(` ├─ Generator.js`);
+
 	initPackage(pkg, dest);
 
-	gulp.src(`${src}/lib/*.js`).pipe(gulp.dest(`${dest}/lib`));
+	return gulp
+		.src([
+			`${src}/*.md`,
+			`${src}/!(core|loading|bin)/*.js`
+		])
+		.pipe(gulp.dest(`${dest}`))
+		.on("data", (d) => {
+			console.log(` ├─ ${d.history[0].substring(d._base.length)}`);
+		})
+		.on("finish", () => {
+			console.log(" └─ done\n");
+		});
+});
 
-	return gulp.src(`${src}/README.md`).pipe(gulp.dest(dest));
-}
-
-function test () {
-	const src  = "./src",
-		  dest = "./dist/test",
-		  pkg  = require("./package.json"),
-		  cfg  = require("./build.json");
-
-	delDest([dest]);
-	mkDest(path.join(dest));
-
-	initCore_Test(src, dest, cfg, pkg.version);
-	initPackage(pkg, dest);
-
-	return gulp.src(`${src}/lib/*.js`).pipe(gulp.dest(`${dest}/lib`));
-}
-
-gulp.task("clean", clean);
-gulp.task("test", test);
-gulp.task("build", build);
-gulp.task("default", gulp.series("clean", "build", "test"));
+gulp.task("default", gulp.series("clean", "build"));

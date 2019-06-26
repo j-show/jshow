@@ -1,0 +1,32 @@
+{
+    "name": "jshow",
+    "description": "jshow Open Tools Framework",
+    "keywords": [
+        "jshow",
+        "jShow"
+    ],
+    "license": "MIT",
+    "homepage": "https://github.com/j-show/jshow",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/j-show/jshow.git"
+    },
+    "bugs": {
+        "url": "https://github.com/j-show/jshow/issues"
+    },
+    "optionalDependencies": {
+        "commander": "*"
+    },
+    "preferGlobal": true,
+    "bin": {
+        "jshow": "Generator.js"
+    },
+    "version": "1.0.6",
+    "logs": {
+        "1.0.1": "project init",
+        "1.0.5": "Format Code to jShow Style Guide",
+        "1.0.6": "Add ProjectManage"
+    },
+    "dependencies": {},
+    "main": "jShow.js"
+}
