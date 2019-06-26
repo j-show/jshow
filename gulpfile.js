@@ -1,10 +1,8 @@
-const fs      = require("fs");
-const path    = require("path");
-const del     = require("del");
-const gulp    = require("gulp");
-const replace = require("gulp-replace");
+const fs    = require("fs");
+const path  = require("path");
+const gulp  = require("gulp");
+const clean = require("gulp-clean");
 
-const delDest          = dest => del.sync(dest);
 const mkDest           = dest => {
 	if (fs.existsSync(dest)) return;
 
@@ -70,36 +68,38 @@ const initCore_Release = (src, dist, cfg, version) => {
 	console.log(" ├─ jShow.js");
 };
 
-function clean () {
-	return new Promise(done => {
-		delDest(["./dist/*"]);
+gulp.task("clean", function () {
+	return gulp
+		.src(
+			[
+				"./dist/*"
+			],
+			{allowEmpty: true}
+		)
+		.pipe(clean({force: true}));
+});
 
-		done();
-	});
-}
-
-function build () {
+gulp.task("build", function () {
 	const src  = "./src";
 	const dest = "./dist";
 	const pkg  = require("./package.json");
 	const cfg  = require("./build.json");
 
-	delDest([dest + "/*"]);
 	mkDest(path.join(dest));
 
 	console.log(`─┬─ release ${pkg.version}`);
 	initCore_Release(src, dest, cfg, pkg.version);
 
-	gulp.src(`${src}/Generator.js`).pipe(gulp.dest(dest));
-	console.log(` ├─ Generator.js`);
+	// gulp.src(`${src}/Generator.js`).pipe(gulp.dest(dest));
+	// console.log(` ├─ Generator.js`);
 
 	initPackage(pkg, dest);
 
-	gulp.src(`${src}/README.md`).pipe(gulp.dest(dest));
-	console.log(` ├─ README.md`);
-
 	return gulp
-		.src(`${src}/!(core|loading)/*.js`)
+		.src([
+			`${src}/*.md`,
+			`${src}/!(core|loading|bin)/*.js`
+		])
 		.pipe(gulp.dest(`${dest}`))
 		.on("data", (d) => {
 			console.log(` ├─ ${d.history[0].substring(d._base.length)}`);
@@ -107,13 +107,6 @@ function build () {
 		.on("finish", () => {
 			console.log(" └─ done\n");
 		});
-}
+});
 
-function test () {
-
-}
-
-gulp.task("clean", clean);
-// gulp.task("test", test);
-gulp.task("build", build);
-// gulp.task("default", gulp.series("clean", "build", "test"));
+gulp.task("default", gulp.series("clean", "build"));

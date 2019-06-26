@@ -9,9 +9,7 @@
  * 2019-05-20    Format Code to jShow Style Guide
  * ==========================================
  */
-(owner => {
-	const $ = global.jShow;
-
+($ => {
 	/*
 	 ====================================
 	 = Name: TObject
@@ -41,7 +39,11 @@
 			this.__errorMax__ = 5;
 			this.__event__    = {};
 			this.__eventMax__ = 99;
+
+			if (this.create) this.create(...arguments);
 		}
+
+		create () {}
 
 		free () {
 			this.__error__ = null;
@@ -457,9 +459,7 @@
 		 *
 		 * @param {number} [size=128] 最大缓存，单位字节(取值32 <= size <= 10K)
 		 */
-		constructor (size = 128) {
-			super();
-
+		create (size = 128) {
 			this.__className = "TCache";
 
 			this._max    = $.isNumber(size, {min: 32, max: 10240}) ? size : 128;
@@ -720,9 +720,7 @@
 		};
 
 		class TList extends TObject {
-			constructor (type) {
-				super();
-
+			create (type) {
 				this.__className = "TList";
 
 				this._value = [];
@@ -1013,9 +1011,7 @@
 			  };
 
 		class TChinaDate extends TObject {
-			constructor (dt) {
-				super();
-
+			create (dt) {
 				this.__className = "TChinaDate";
 
 				this._nt = {year: 0, month: 0, day: 0};
@@ -1249,9 +1245,7 @@
 	 ====================================
 	 */
 	class TGuid extends TObject {
-		constructor (value) {
-			super();
-
+		create (value) {
 			this.__className = "TGuid";
 
 			this._value = [0, 0, 0, 0, 0];
@@ -1403,5 +1397,6 @@
 		}
 	};
 
-	jShow = {...owner, ...api};
+	jShow = {...$, ...api};
+	$     = jShow;
 })(jShow);

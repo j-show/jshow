@@ -15,9 +15,7 @@
  * 2019-05-25    增加AMD识别方式，同时兼容CMD/AMD
  * ==========================================
  */
-(owner => {
-	const $ = global.jShow;
-
+(($, global) => {
 	if ($.mode === $.MODE.Node) return;
 
 	const loadMode = {
@@ -731,7 +729,8 @@
 		}
 	};
 
-	jShow = {...owner, ...api};
+	jShow = {...$, ...api};
+	$     = jShow;
 
 	global.__module = modules;
 	//适配部分外部库通过此属性区分Node状态;
@@ -748,5 +747,4 @@
 		api.__require("../src/jquery.min.js");
 		api.__require("../src/global.min.css");
 	}
-
-})(jShow);
+})(jShow, global);

@@ -16,100 +16,101 @@
 	};
 
 	const jShow = {
-		ver: "1.0.5",
-		...(factory.call(global, MODE))
+		ver:  "1.0.6",
+		mode: MODE.Node,
+		...(factory(global, MODE))
 	};
 
 	global.jShow = jShow;
 
 	if (jShow.mode === MODE.Node) module.exports = jShow;
 })(typeof (window) !== "undefined" ? window : global, function (global, MODE) {
-	let jShow = {};
-
 	if (!global.navigator) global.navigator = {userAgent: ""};
 
-	jShow.MODE = MODE;
-	jShow.mode = MODE.Node;
+	let jShow = {
+		MODE,
+		mode: MODE.Node,
+		/**
+		 * Get Javascript Env Version
+		 *
+		 * @param {string} [na=undefined] <version object>
+		 * @returns {object}
+		 *    @return {number} mode <value from MODE object>
+		 *    @return {string} kernel <kernel name>
+		 *    @return {string} version <kernel version>
+		 */
+		version (na = navigator.userAgent) {
+			let nav     = na;
+			let mode    = MODE.Node;
+			let kernel  = "node";
+			let version = "";
 
-	/**
-	 * Get Javascript Env Version
-	 *
-	 * @param {string} [na=undefined] <version object>
-	 * @returns {object}
-	 *    @return {number} mode <value from MODE object>
-	 *    @return {string} kernel <kernel name>
-	 *    @return {string} version <kernel version>
-	 */
-	jShow.version = function parseKernelVersion (na = navigator.userAgent) {
-		let nav     = na;
-		let mode    = MODE.Node;
-		let kernel  = "node";
-		let version = "";
+			try {
+				if (!nav && (window === void 0) && process) {
+					version = process.versions.node;
+					return;
+				}
 
-		try {
-			if (!nav && (window === void 0) && process) {
-				version = process.versions.node;
-				return;
+				(nav => {
+					let val = null;
+
+					val = nav.match(/msie ([\d.]+)/);
+					if (val && val.length > 1) {
+						kernel  = "msie";
+						version = val[1];
+						return;
+					}
+
+					val = nav.match(/firefox\/([\d.]+)/);
+					if (val && val.length > 1) {
+						kernel  = "firefox";
+						version = val[1];
+						return;
+					}
+
+					val = nav.match(/chrome\/([\d.]+)/);
+					if (val && val.length > 1) {
+						kernel  = "chrome";
+						version = val[1];
+						return;
+					}
+
+					val = nav.match(/opera.([\d.]+)/);
+					if (val && val.length > 1) {
+						kernel  = "opera";
+						version = val[1];
+						return;
+					}
+
+					val = nav.match(/version\/([\d.]+).*safari/);
+					if (val && val.length > 1) {
+						kernel  = "safari";
+						version = val[1];
+						return;
+					}
+
+					kernel  = "other";
+					version = "0";
+				})(nav.toLowerCase());
+
+				mode = (nav => {
+					if (nav.indexOf("Android") > -1 || nav.indexOf("Linux") > -1) return MODE.WebAndroid;
+
+					if (nav.indexOf("iPhone") > -1) return MODE.WebiPhone;
+
+					if (nav.indexOf("iPad") > -1) return MODE.WebiPad;
+
+					if (nav.match(/\(i[^;]+;( U;)? CPU.+Mac OS/)) return MODE.WebMac;
+
+					return MODE.WebDesktop;
+				})(nav);
 			}
-
-			(nav => {
-				let val = null;
-
-				val = nav.match(/msie ([\d.]+)/);
-				if (val && val.length > 1) {
-					kernel  = "msie";
-					version = val[1];
-					return;
-				}
-
-				val = nav.match(/firefox\/([\d.]+)/);
-				if (val && val.length > 1) {
-					kernel  = "firefox";
-					version = val[1];
-					return;
-				}
-
-				val = nav.match(/chrome\/([\d.]+)/);
-				if (val && val.length > 1) {
-					kernel  = "chrome";
-					version = val[1];
-					return;
-				}
-
-				val = nav.match(/opera.([\d.]+)/);
-				if (val && val.length > 1) {
-					kernel  = "opera";
-					version = val[1];
-					return;
-				}
-
-				val = nav.match(/version\/([\d.]+).*safari/);
-				if (val && val.length > 1) {
-					kernel  = "safari";
-					version = val[1];
-					return;
-				}
-
-				kernel  = "other";
-				version = "0";
-			})(nav.toLowerCase());
-
-			mode = (nav => {
-				if (nav.indexOf("Android") > -1 || nav.indexOf("Linux") > -1) return MODE.WebAndroid;
-
-				if (nav.indexOf("iPhone") > -1) return MODE.WebiPhone;
-
-				if (nav.indexOf("iPad") > -1) return MODE.WebiPad;
-
-				if (nav.match(/\(i[^;]+;( U;)? CPU.+Mac OS/)) return MODE.WebMac;
-
-				return MODE.WebDesktop;
-			})(nav);
-		}
-		finally {
-			return {mode, kernel, version};
+			finally {
+				return {mode, kernel, version};
+			}
 		}
 	};
+
 	jShow.mode = jShow.version().mode;
 
 	if (jShow.mode !== MODE.Node && !global.global) global.global = global;
@@ -125,9 +126,7 @@
  * 2019-05-19    Format Code to jShow Style Guide
  * ==========================================
  */
-(owner => {
-	const $ = global.jShow;
-
+($ => {
 	const api = {
 		/**
 		 * Any type parse, return type string
@@ -144,7 +143,6 @@
 			const rxp  = v => (/^\[object (.*)\]$/.exec(Object.prototype.toString.call(v))[1]).toLowerCase();
 
 			switch (type) {
-				default:
 				case "undefined":
 					return opt ? "undefined" : "null";
 				case "boolean":
@@ -152,7 +150,10 @@
 				case "string":
 					return type;
 				case "function":
-					return opt ? "function" : rxp(value);
+				case "asyncfunction":
+				case "generatorfunction":
+					return !opt ? "function" : rxp(value);
+				default:
 				case "object": {
 					if (value === null) return "null";
 					if (!opt) return "object";
@@ -170,33 +171,13 @@
 			}
 		},
 		/**
-		 * Between Judge, a and b
-		 *
-		 * @WANR: this function no safe
-		 * @FIX: pls change this
-		 *
-		 * @param {number} value
-		 * @param {number} a
-		 * @param {number} b
-		 * @returns {boolean}
-		 */
-		between (value, a, b) {
-			const isNumber = $.isNumber;
-
-			if (!isNumber(value, {int: false})) return false;
-			if (isNumber(a, {int: false}) && value < a) return false;
-			if (isNumber(b, {int: false}) && value > b) return false;
-
-			return true;
-		},
-		/**
 		 * Get callback function from array/arguments
 		 *
 		 * @param {Array|arguments} value <target>
 		 * @param {object|number} opt <option>
 		 *    @param {number} [opt.index=0] <start position>
 		 *    @param {boolean} [opt.loop=true] <is loop check>
-		 *    @param {boolean|string} [opt.type=async] <change function type is (normal,async,generator)>
+		 *    @param {boolean|string} [opt.type=all] <change function type is (normal,async,generator)>
 		 * @returns {function/null}
 		 */
 		callback (value, opt = 0) {
@@ -207,7 +188,7 @@
 			let {
 					index = 0,
 					loop  = true,
-					type  = "async"
+					type  = "all"
 				} = opt;
 
 			switch (typeof(opt)) {
@@ -216,6 +197,9 @@
 					break;
 				case "number":
 					index = opt;
+					break;
+				case "string":
+					type = opt;
 					break;
 			}
 
@@ -226,8 +210,9 @@
 
 			if (index < 0 || index >= list.length) return null;
 
-			for (let i = list.length - 1, func = $.isFunction; i > 0; i--) {
-				if (func(list[i], type)) return list[i];
+			for (let i = list.length - 1, func = $.isFunction, t; i >= 0; i--) {
+				t = func(list[i], type);
+				if (t) return list[i];
 				if (!loop) break;
 			}
 
@@ -243,16 +228,18 @@
 		 *    @param {boolean} [opt.force=false] <is force of array type>
 		 *    @param {boolean} [opt.index=0] <start position, only type=array>
 		 *    @param {boolean} [opt.desc=false] <is desc sort, only trype=array>
+		 *    @param {boolean} [opt.empty=true] <when value is empty return true/false>
 		 * @returns {boolean}
 		 */
 		each (value, callback, opt = false) {
-			if (!value || !$.isFunction(callback, "async")) return false;
+			if (!value || !$.isFunction(callback, "nasync")) return false;
 
 			let {
 					detail = false,
 					force  = false,
 					index  = 0,
-					desc   = false
+					desc   = false,
+					empty  = true
 				} = opt;
 
 			switch (typeof(opt)) {
@@ -267,6 +254,7 @@
 			detail = detail === true;
 			force  = force === true;
 			desc   = desc === true;
+			empty  = empty === true;
 
 			let list = value;
 			let type = $.type(list, true);
@@ -280,8 +268,9 @@
 					break;
 				case "map":
 					list = {};
-
-					for (let [k, v] of value) list[k] = v;
+					value.forEach((d, k) => {
+						list[k] = d;
+					});
 
 					type = "object";
 					break;
@@ -293,6 +282,8 @@
 				default:
 					return false;
 				case "array": {
+					if (!list.length) return empty;
+
 					type = $.type;
 
 					if (!$.isNumber(index)) index = 0;
@@ -319,12 +310,16 @@
 					type = $.type;
 
 					let d;
+					let l = 0;
 
 					for (let k in list) {
+						l += 1;
 						d = list[k];
 						d = callback.call(value, d, k, (detail ? type(d, true) : list), value);
 						if (d === false) return false;
 					}
+
+					if (l < 1) return empty;
 
 					break;
 				}
@@ -335,59 +330,105 @@
 		/**
 		 * Unique function
 		 *
-		 * @param {Array|set|map} value <src object>
+		 * @param {Array|string|set|map} value <src object>
 		 * @param {boolean} [write=false] <is change src object>
-		 * @returns {Array}
+		 * @returns {Array|string}
 		 */
 		unique (value, write = false) {
-			if (!$.isArray(value, true)) return [];
+			const type = $.type(value, true);
 
-			const opt    = write === true;
+			let data = value;
+
+			switch (type) {
+				default:
+					return [];
+				case "string":
+					data = [...data];
+					break;
+				case "array":
+				case "set":
+				case "map":
+					break;
+			}
+
+			const opt    = write === true && type !== "string";
 			const result = [];
-			const len    = value.length;
+			const len    = data.length;
 
 			for (let i = 0, d; i < len; i++) {
-				d = value[i];
+				d = data[i];
 
 				if (result.indexOf(d) > -1) continue;
 
 				result.push(d);
-				if (opt) value.push(d);
+				if (opt) data.push(d);
 			}
 
-			if (opt) value.splice(0, len);
+			if (opt) data.splice(0, len);
 
-			return result;
+			return type === "string" ? result.join("") : result;
 		},
 		/**
 		 * Exist judge value in list
 		 *
 		 * @param {*} value <target>
 		 * @param {Array|object|set|map} list <check list>
+		 * @param {boolean} [filter] <option>
 		 * @param {function} callback
 		 * @returns {boolean}
 		 */
-		has (value, list, callback) {
+		has (value, list, filter = "value", callback = filter) {
 			let result = false;
 
-			if (!$.isFunction(callback)) callback = null;
+			if (!$.isFunction(callback, "nasync")) callback = null;
 
-			switch ($.type(list, true)) {
+			switch (filter) {
 				default:
-					return false;
-				case "set":
-				case "map":
-					return list.has(value);
-				case "array":
-				case "arguments":
-				case "object":
-				case "string":
-					return $.each(list, (d, k) => {
-						if (!Object.is(value, d)) return;
-						if (callback && callback(k) === true) return;
+				case "value":
+					switch (typeof(list)) {
+						default:
+							break;
+						case "object":
+							if (!list) return false;
 
-						return false;
-					});
+							if (list instanceof Set) {
+								result = list.has(value);
+								if (callback && callback(value, list) === true) result = true;
+
+								return result;
+							}
+						case "string":
+						case "function":
+							result = $.each(list, (d, k) => {
+								if (Object.is(value, d)) return;
+								if (callback && callback(d, k, list) === true) return;
+
+								return false;
+							}, {empty: false});
+
+							break;
+					}
+					break;
+				case "key":
+					switch (typeof(list)) {
+						default:
+							break;
+						case "object":
+							if (!list) return false;
+
+							if (list instanceof Map) {
+								result = list.has(value);
+								if (callback && callback(list.get(value), value, list) === true) result = true;
+
+								return result;
+							}
+						case "function":
+							result = !($.each(list, (d, k) => {
+								if (value === k) return false;
+							}, {empty: true}));
+							break;
+					}
+					break;
 			}
 
 			return result;
@@ -408,7 +449,7 @@
 			let dtype   = $.type(dest, true);
 			let dsimple = $.isSimple(dest);
 
-			if (!(stype in ["array", "object", "function", "set", "map"])) return src;
+			if (["array", "object", "function", "set", "map"].indexOf(stype) < 0) return src;
 			if (!dsimple && stype !== dtype) return dest;
 
 			let {
@@ -544,9 +585,19 @@
 			if (type[0] !== type[1]) return false;
 
 			switch (type[0]) {
+				case "boolean":
+				case "string":
+				case "null":
+				case "undefined":
+					return a === b;
+				case "number":
+					if (isNaN(a) && isNaN(b)) return true;
+					return a === b;
 				default:
 					return Object.is(a, b);
 				case "function":
+				case "asyncfunction":
+				case "generatorfunction":
 					return a.toString() === b.toString();
 				case "date":
 					return a.getTime() === b.getTime();
@@ -585,23 +636,28 @@
 		 * @param {*} value <target>
 		 * @param {boolean|object} opt <option>
 		 *    @param {boolean} [opt.udf=true] <undefined of null>
+		 *    @param {boolean} [opt.nan=false] <nan of null>
 		 *    @param {boolean} [opt.obj=false] <array/object is empty of null>
 		 * @returns {boolean}
 		 */
 		isNull (value, opt = true) {
 			let {
 					udf = true,
-					obj = false
+					obj = false,
+					nan = false
 				} = opt;
 
 			if ($.isBool(opt, false)) udf = opt;
 
 			udf = udf === true;
+			nan = nan === true;
 			obj = obj === true;
 
 			switch (typeof(value)) {
 				default:
 					return false;
+				case "number":
+					return nan && isNaN(value);
 				case "undefined":
 					return udf;
 				case "object":
@@ -627,7 +683,7 @@
 				case "string":
 					if (str !== true) return false;
 
-					return ({"true": true, "false": true})[value];
+					return ["true", "false"].indexOf(value) >= 0;
 			}
 		},
 		/**
@@ -651,7 +707,14 @@
 					max = NaN
 				} = opt;
 
-			if ($.isBool(opt)) nan = opt;
+			switch (typeof(opt)) {
+				case "boolean":
+					nan = opt;
+					break;
+				case "number":
+					min = opt;
+					break;
+			}
 
 			min = Number(min);
 			max = Number(max);
@@ -663,7 +726,7 @@
 				default:
 					return false;
 				case "number":
-					if (!nan && isNaN(value)) return false;
+					if (isNaN(value)) return nan;
 
 					if (int) {
 						if (parseInt(value) !== value) return false;
@@ -679,7 +742,11 @@
 				case "string":
 					if (!str) return false;
 
-					return $.isNumber(Number(value), {nan, int, min, max});
+					let num = Number(value);
+
+					if (isNaN(num) || /[^0-9\-\.]/.test(value)) return false;
+
+					return $.isNumber(num, {int, min, max});
 			}
 		},
 		/**
@@ -714,13 +781,9 @@
 			max   = Number(max);
 			empty = empty === true;
 
-			if (empty) {
-				min = 0;
-				max = 0;
-			}
-
 			let len = value.length;
 
+			if (!len) return empty;
 			if (!isNaN(min) && len < min) return false;
 			if (!isNaN(max) && len > max) return false;
 
@@ -730,23 +793,34 @@
 		 * Type judge: function
 		 *
 		 * @param {*} value 判断值
-		 * @param {string|boolean} [type=false] <function type, allow normal/async/generator>
+		 * @param {string|boolean} [filter=false] <function type, allow normal/async/generator>
 		 *     true <all function type>
 		 *     false <only normal type>
-		 *     async <normal/async type>
-		 *     generator <noarmal/generator type>
+		 *     nasync <normal/async type>
+		 *     ngenerator <normal/generator type>
+		 *     async <async type>
+		 *     generator <generator type>
 		 * @returns {boolean}
 		 */
-		isFunction (value, type = true) {
+		isFunction (value, filter = true) {
+			switch (typeof (filter)) {
+				case "boolean":
+				case "string":
+					break;
+				default:
+					filter = true;
+					break;
+			}
+
 			switch ($.type(value, true)) {
 				default:
 					return false;
 				case "function":
-					return true;
+					return [true, false, "all", "nasync", "ngenerator"].indexOf(filter) >= 0;
 				case "asyncfunction":
-					return (type !== true) || (type === "async") || (type === "all");
+					return [true, "all", "nasync", "async"].indexOf(filter) >= 0;
 				case "generatorfunction":
-					return (type !== true) || (type === "generator") || (type === "all");
+					return [true, "all", "ngenerator", "generator"].indexOf(filter) >= 0;
 			}
 		},
 		/**
@@ -775,17 +849,23 @@
 					break;
 			}
 
-			min = Number(min);
-			if (empty === true) min = 0;
+			min   = Number(min);
+			empty = empty === true;
+			arg   = arg === true;
 
 			switch ($.type(value, true)) {
 				default:
 					return false;
-				case "array":
-					return !isNaN(min) || (value.length > min);
 				case "arguments":
-					return (arg === true) && (!isNaN(min) || (value.length > min));
+					if (!arg) return false;
+				case "array":
+					if (!value.length) return empty;
+					if (!isNaN(min) && (value.length < min)) return false;
+
+					break;
 			}
+
+			return true;
 		},
 		/**
 		 * Type judge: object
@@ -793,22 +873,33 @@
 		 * @WARN: only check object like json, this function no safe
 		 *
 		 * @param {*} value <target>
-		 * @param {string|boolean} [arg=object] <only parse object>
+		 * @param {string|boolean} [filter=object] <only parse object>
 		 * @returns {boolean}
 		 */
-		isObject (value, arg = "object") {
-			let result = typeof(value) === "object";
+		isObject (value, filter = "object") {
+			let type = $.type(value, true);
 
-			if (!result) return false;
+			switch (type) {
+				case "undefined":
+				case "boolean":
+				case "number":
+				case "string":
+				case "function":
+				case "asyncfunction":
+				case "generatorfunction":
+					return false;
+			}
 
-			switch (arg) {
-				default:
-					return value ? (value.constructor === Object) : false;
+			switch (filter) {
 				case false:
 					return value !== null;
 				case true:
-				case "any":
+				case "all":
 					return true;
+				case "object":
+					return value ? (value.constructor === Object) : false;
+				default:
+					return value ? (type === filter) : false;
 			}
 		},
 		/**
@@ -833,7 +924,7 @@
 			const isFunc = $.isFunction;
 
 			if (isFunc(value, "generator")) return true;
-			if (obj !== true || !$.isObject(value, "ang")) return false;
+			if (obj !== true || !$.isObject(value, "all")) return false;
 
 			return isFunc(value.next) && isFunc(value.throw);
 		},
@@ -874,7 +965,7 @@
 			for (let i = 0, char; i < list.length; i++) {
 				if (escape) escape = false;
 				else {
-					char = char.codePointAt();
+					char = list[i].codePointAt();
 
 					switch (char) {
 						case 92:
@@ -962,7 +1053,7 @@
 					data[0] = data[0].replace(/-/g, "/").split("/");
 					if (data[0].length !== 3) return false;
 
-					let [year, month, day] = value[0];
+					let [year, month, day] = data[0];
 
 					year  = Number(year);
 					month = Number(month);
@@ -1011,10 +1102,10 @@
 
 					let [hour, minute, second, msecond] = data;
 
-					if ($.isNumber(hour, {min: 0, max: 23})) return false;
-					if ($.isNumber(minute, {min: 0, max: 59})) return false;
-					if ($.isNumber(second, {min: 0, max: 59})) return false;
-					if ($.isNumber(msecond, {min: 0, max: 999})) return false;
+					if (!$.isNumber(hour, {str: true, min: 0, max: 23})) return false;
+					if (!$.isNumber(minute, {str: true, min: 0, max: 59})) return false;
+					if (!$.isNumber(second, {str: true, min: 0, max: 59})) return false;
+					if (!$.isNumber(msecond, {str: true, min: 0, max: 999})) return false;
 
 					return true;
 			}
@@ -1026,7 +1117,7 @@
 		 * @returns {boolean}
 		 */
 		isjQuery (value) {
-			return $.isObject(value) && value.jquery && true;
+			return $.isObject(value, false) && !!(value.jquery) && true;
 		},
 		/**
 		 * Type judge: DOM object
@@ -1048,14 +1139,14 @@
 		isGuid (value) {
 			if (!$.isString(value, 36)) return false;
 
-			let data = value.replace(/^\{|\}$/g, "");
+			let data = value.replace(/^\{|\}$/g, "").trim();
 			if (data.length !== 36) return false;
 
 			data = data.toLowerCase().split("-");
 			if (data.length !== 5) return false;
 
-			for (let i = 0, dic = [8, 4, 4, 4, 12], c, d; i < value.length; i++) {
-				d = value[i];
+			for (let i = 0, dic = [8, 4, 4, 4, 12], c, d; i < data.length; i++) {
+				d = data[i];
 
 				if (d.length !== dic[i]) return false;
 
@@ -1068,14 +1159,39 @@
 
 			return true;
 		},
-		hasOwnProperty (value, key) {
-			switch ($.type(value)) {
+		/**
+		 * Value judge: base64
+		 *
+		 * @WARN: only parse string
+		 *
+		 * @param {string} value <target>
+		 * @returns {boolean}
+		 */
+		isBase64 (value) {
+			if (!$.isString(value, 4)) return false;
 
+			let data = value.trim();
+
+			if (data.length % 4) return false;
+
+			(data = data.replace(/=*$/, "").split("")).reverse();
+			for (let i = 0, c; i < data.length; i++) {
+				c = data[i].codePointAt();
+
+				if (c === 43 || c === 47) continue;
+				if (c >= 48 && c <= 57) continue;
+				if (c >= 65 && c <= 90) continue;
+				if (c >= 97 && c <= 122) continue;
+
+				return false;
 			}
+
+			return true;
 		}
 	};
 
-	jShow = {...owner, ...api};
+	jShow = {...$, ...api};
+	$     = jShow;
 })(jShow);
 /**
  * ==========================================
@@ -1088,9 +1204,7 @@
  * 2019-05-20    Format Code to jShow Style Guide
  * ==========================================
  */
-(owner => {
-	const $ = global.jShow;
-
+($ => {
 	/*
 	 ====================================
 	 = Name: TObject
@@ -1120,7 +1234,11 @@
 			this.__errorMax__ = 5;
 			this.__event__    = {};
 			this.__eventMax__ = 99;
+
+			if (this.create) this.create(...arguments);
 		}
+
+		create () {}
 
 		free () {
 			this.__error__ = null;
@@ -1536,9 +1654,7 @@
 		 *
 		 * @param {number} [size=128] 最大缓存，单位字节(取值32 <= size <= 10K)
 		 */
-		constructor (size = 128) {
-			super();
-
+		create (size = 128) {
 			this.__className = "TCache";
 
 			this._max    = $.isNumber(size, {min: 32, max: 10240}) ? size : 128;
@@ -1799,9 +1915,7 @@
 		};
 
 		class TList extends TObject {
-			constructor (type) {
-				super();
-
+			create (type) {
 				this.__className = "TList";
 
 				this._value = [];
@@ -2092,9 +2206,7 @@
 			  };
 
 		class TChinaDate extends TObject {
-			constructor (dt) {
-				super();
-
+			create (dt) {
 				this.__className = "TChinaDate";
 
 				this._nt = {year: 0, month: 0, day: 0};
@@ -2328,9 +2440,7 @@
 	 ====================================
 	 */
 	class TGuid extends TObject {
-		constructor (value) {
-			super();
-
+		create (value) {
 			this.__className = "TGuid";
 
 			this._value = [0, 0, 0, 0, 0];
@@ -2482,7 +2592,8 @@
 		}
 	};
 
-	jShow = {...owner, ...api};
+	jShow = {...$, ...api};
+	$     = jShow;
 })(jShow);
 /**
  * ==========================================
@@ -2495,9 +2606,7 @@
  * 2019-05-19    Format Code to jShow Style Guide
  * ==========================================
  */
-(owner => {
-	const $ = global.jShow;
-
+($ => {
 	/*
 	 ====================================
 	 = Name: TCallback
@@ -2555,9 +2664,7 @@
 		};
 
 		class TCallback extends TObject {
-			constructor (opt, limit, callback) {
-				super();
-
+			create (opt, limit, callback) {
 				this.__className = "TCallback";
 
 				this._locked = false;
@@ -2672,7 +2779,7 @@
 		}
 
 		return TCallback;
-	})(TObject);
+	})($.TObject);
 
 	/*
 	 ====================================
@@ -2697,10 +2804,8 @@
 	 =   always      = always event, after done/fail event
 	 ====================================
 	 */
-	class TDeferred extends TObject {
-		constructor (limit, callback) {
-			super();
-
+	class TDeferred extends $.TObject {
+		create (limit, callback) {
 			let _this    = this;
 			let _state   = _this.STATE;
 			let _event   = {
@@ -2896,13 +3001,13 @@
 		prop.always   = function (callback) { return this.on("always", callback); };
 		prop.warn     = function (callback) { return this.on("warn", callback); };
 		prop.progress = function (callback) { return this.on("progress", callback); };
-		prop.resolve  = function (arg) {
-			this.__resolve.call(this, arg);
+		prop.resolve  = function (...arg) {
+			this.__resolve.apply(this, arg.length > 2 ? [arg] : arg);
 
 			return this;
 		};
-		prop.reject   = function (arg) {
-			this.__reject.call(this, arg);
+		prop.reject   = function (...arg) {
+			this.__reject.apply(this, arg.length > 2 ? [arg] : arg);
 
 			return this;
 		};
@@ -2942,7 +3047,7 @@
 			obj.__reject  = fail;
 
 			obj.__limit  = 0;
-			obj.__simple = simple === true;
+			obj.__simple = simple !== false;
 			if (!obj.__simple) {
 				obj.__warn     = $.Callback(100).fire();
 				obj.__progress = $.Callback(100).fire();
@@ -3126,7 +3231,8 @@
 		}
 	};
 
-	jShow = {...owner, ...api};
+	jShow = {...$, ...api};
+	$     = jShow;
 })(jShow);
 /**
  * ==========================================
@@ -3145,9 +3251,7 @@
  * 2019-05-25    增加AMD识别方式，同时兼容CMD/AMD
  * ==========================================
  */
-(owner => {
-	const $ = global.jShow;
-
+(($, global) => {
 	if ($.mode === $.MODE.Node) return;
 
 	const loadMode = {
@@ -3861,7 +3965,8 @@
 		}
 	};
 
-	jShow = {...owner, ...api};
+	jShow = {...$, ...api};
+	$     = jShow;
 
 	global.__module = modules;
 	//适配部分外部库通过此属性区分Node状态;
@@ -3878,8 +3983,7 @@
 		api.__require("../src/jquery.min.js");
 		api.__require("../src/global.min.css");
 	}
-
-})(jShow);
+})(jShow, global);
 /**
  * ==========================================
  * Name:           jShow's Load Module
@@ -3891,15 +3995,13 @@
  * 2019-05-20    Format Code to jShow Style Guide
  * ==========================================
  */
-(owner => {
-	const $ = global.jShow;
-
+(($, global) => {
 	if ($.mode !== $.MODE.Node) return;
 
 	const _require = (url, tag, owner) => owner[tag || url] = require(url);
 	const _define = (alias, deps = alias, factory = deps, owner = factory, exec = owner) => {
 		let modules = $.isArray(deps) ? [...deps] : [];
-		let func = factory;
+		let func    = factory;
 
 		modules.forEach((d, i) => {
 			modules[i] = $[d] || require(d);
@@ -3922,10 +4024,11 @@
 		define:    _define
 	};
 
-	jShow = {...owner, ...api};
+	jShow = {...$, ...api};
+	$     = jShow;
 
 	if (!global.define) global.define = api.define;
-})(jShow);
+})(jShow, global);
 
 	/**
  * ==========================================

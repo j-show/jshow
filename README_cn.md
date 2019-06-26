@@ -129,13 +129,13 @@ jShow是一个**开放式工具框架**。他被设计成同时支持`WebBrowser
 
 # 文档
 
-我们提供[在线样例](https://jshow.org/example)，还可以通过阅读[Wiki](https://github.com/j-show/jShow/wiki/中文Wiki)来了解相关说明.
+我们提供[在线样例](https://jshow.org/example/index-zh.html)，还可以通过阅读[Wiki](https://github.com/j-show/jShow/wiki/中文Wiki)来了解相关说明.
 
 ---
 
 # 问题
 
-如需问题和支持, 请使用 [官方论坛](https://jshow.org/forum) 或 [社区聊天](https://jshow.org/chat).
+如需问题和支持, 请使用 [官方论坛](https://forum.jshow.org) 或 [社区聊天](https://chat.jshow.org).
 这个仓库的[Issue](https://github.com/j-show/jShow/issues)，**只用于错误报告和功能请求**
 
 ---

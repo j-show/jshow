@@ -511,66 +511,100 @@ define("Conver", ["String", "RegExp"], function (require, module, STRING, REGEXP
 					 * @param {number|object} opt
 					 *    @param {number} [opt.tab=0] <tab conver blank space>
 					 *    @param {number} [opt.level] <tab level>
+					 *    @param {boolean} [opt.form=false] <parse form-data>
 					 * @param {function} [callback]
 					 */
 					let {
 							tab   = 0,
-							level = 0
+							level = 0,
+							form  = false
 						} = opt;
 
-					if (typeof(opt) === "number") tab = opt;
-
-					if (!$.isNumber(tab, {min: 0})) tab = 0;
-					if (!$.isNumber(level, {min: 0})) level = 0;
-
-					let list = [];
-					let fmt  = ["", "{", "}", ",", "\"", "\":"];
-
-					if (tab > 0) {
-						let d = tab * level;
-
-						for (let i = 0; i < tab; i++) fmt[4] = ` ${fmt[4]}`;
-						for (let i = 0; i < d; i++) fmt[0] = `${fmt[0]} `;
-						fmt[1] = `${fmt[0]}${fmt[1]}\n`;
-						fmt[2] = `\n${fmt[0]}${fmt[2]}`;
-						fmt[3] = `${fmt[3]}\n`;
-						fmt[4] = `${fmt[0]}${fmt[4]}`;
-						fmt[5] = `${fmt[5]} `;
+					switch (typeof(opt)) {
+						case "number":
+							tab = opt;
+							break;
+						case "boolean":
+							form = opt;
+							break;
 					}
 
-					level += 1;
+					if (form === true) {
+						let list = [];
+						let d;
 
-					if (!$.isObject(opt)) opt = {};
-					opt.tab   = tab;
-					opt.level = level;
+						for (let k in data) {
+							d = data[k];
 
-					let d,
-						o,
-						t;
-
-					for (let k in data) {
-						d = data[k];
-						t = $.type(d, true);
-						o = opt[k] || opt[t] || opt;
-
-						switch (t) {
-							default:
-								d = api.toString(d, o).trim();
-								break;
-							case "number":
-								d = o.len ? this.toFloat(d, o) : this.toInteger(d, o);
-								break;
-							case "string":
-								d = api.toString(d, o);
-								d = `\"${d}\"`;
-								break;
+							switch ($.type(d, true)) {
+								case "boolean":
+								case "string":
+								case "number":
+									list.push(`${k}=${d}`);
+									break;
+								case "array":
+									d.forEach(v => list.push(`${k}=${v}`));
+									break;
+							}
 						}
 
-						list.push(`${fmt[4]}${k}${fmt[5]}${d}`);
+						data = list.join("&");
 					}
+					else {
+						if (typeof(opt) === "number") tab = opt;
 
-					data = list.join(fmt[3]);
-					data = `${fmt[1]}${data}${fmt[2]}`;
+						if (!$.isNumber(tab, {min: 0})) tab = 0;
+						if (!$.isNumber(level, {min: 0})) level = 0;
+
+						let list = [];
+						let fmt  = ["", "{", "}", ",", "\"", "\":"];
+
+						if (tab > 0) {
+							let d = tab * level;
+
+							for (let i = 0; i < tab; i++) fmt[4] = ` ${fmt[4]}`;
+							for (let i = 0; i < d; i++) fmt[0] = `${fmt[0]} `;
+							fmt[1] = `${fmt[0]}${fmt[1]}\n`;
+							fmt[2] = `\n${fmt[0]}${fmt[2]}`;
+							fmt[3] = `${fmt[3]}\n`;
+							fmt[4] = `${fmt[0]}${fmt[4]}`;
+							fmt[5] = `${fmt[5]} `;
+						}
+
+						level += 1;
+
+						if (!$.isObject(opt)) opt = {};
+						opt.tab   = tab;
+						opt.level = level;
+
+						let d,
+							o,
+							t;
+
+						for (let k in data) {
+							d = data[k];
+							t = $.type(d, true);
+							o = opt[k] || opt[t] || opt;
+
+							switch (t) {
+								default:
+									d = api.toString(d, o).trim();
+									break;
+								case "number":
+									d = o.len ? this.toFloat(d, o) : this.toInteger(d, o);
+									break;
+								case "string":
+									d = api.toString(d, o);
+									d = `\"${d}\"`;
+									break;
+							}
+
+							list.push(`${fmt[4]}${k}${fmt[5]}${d}`);
+						}
+
+						data = list.join(fmt[3]);
+						data = `${fmt[1]}${data}${fmt[2]}`;
+					}
 
 					return func ? func(data, value) : data;
 				}
@@ -737,188 +771,223 @@ define("Conver", ["String", "RegExp"], function (require, module, STRING, REGEXP
 		 * String to json object
 		 *
 		 * @param {string} value
+		 * @param {object|boolean} [opt]
+		 *    @param {boolean} [opt.form=false]
 		 * @param {function} [callback=null] <custom function, key/vale oper by every time>
 		 * @returns {object|Array}
 		 */
-		toJSON (value, callback) {
+		toJSON (value, opt, callback = opt) {
 			let data = String(value).trim();
 			let func = $.isFunction(callback) ? callback : null;
 
-			const parseTag    = (type, value, REGEXP) => {
-				if (type < 0 || type > 2) return value;
+			let {
+					form = false
+				} = opt;
 
-				let i = 0,
-					d = "";
-
-				for (let l = 0, c = 0; i < value.length; i++) {
-					c = value[i];
-					d += c;
-					c = c.charCodeAt();
-
-					if (type === 0) {
-						//字符串
-						if (!l) l = c;
-						else if (c === 92 || (l & 64)) l ^= 64;
-						else if (l === c) break;
-					}
-					else if (type === 1) {
-						//对象
-						if (c === 39 || c === 34) {
-							d += parseTag(0, value.substr(i)).substr(1);
-							i = d.length - 1;
-						}
-						else if (c === 123) {
-							l += 1;
-						}
-						else if (c === 125) {
-							l -= 1;
-							if (!l) break;
-						}
-					}
-					else if (type === 2) {
-						//数组
-						if (c === 39 || c === 34) {
-							d += parseTag(0, value.substr(i)).substr(1);
-							i = d.length - 1;
-						}
-						else if (c === 91) {
-							l += 1;
-						}
-						else if (c === 93) {
-							l -= 1;
-							if (!l) break;
-						}
-					}
-				}
-
-				if (REGEXP && i < value.length) REGEXP.lastIndex -= value.length - d.length;
-
-				return d;
-			};
-			const parseSimple = (parent, key, value, callback, STRING, REGEXP) => {
-				let str = value[0];
-
-				if (str === "'" || str === "\"") value = parseTag(0, value, REGEXP);
-
-				str = STRING.Trim(value, ["\"", "'"]);
-
-				if (str !== value) {
-					parent[key] = str;
-				}
-				else {
-					switch (str) {
-						case "true":
-							parent[key] = true;
-							break;
-						case "false":
-							parent[key] = false;
-							break;
-						case "null":
-						case "undefined":
-							parent[key] = null;
-							break;
-						default:
-							if (/^function\s*\(.*?\)\s*\{\s\S*?\}$/i.test(str)) {
-								delete parent[key];
-							}
-							else {
-								parent[key] = $.isNumber(str, {nan: false, str: true}) ? Number(str) : str;
-							}
-							break;
-					}
-				}
-
-				if (callback) callback(parent, key, parent[key]);
-			};
-			const parseObject = (parent, value, callback, STRING, REGEXP) => {
-				const rxp = [
-					/["']?(\w{1}[\w\-\.]*)["']?\s*:\s*((?:\{[\s\S]*\})|(?:\[[\s\S]*\])|(?:[ef]?\-?\d+\.?\d*)|(?:true|false|null|undefined)|(?:["'][\s\S]*["'])|(?:function\s*\(.*?\)\s*\{[\s\S]*?\})){1},/g,
-					/^\{[\s\S]*\}$/,
-					/^\[[\s\S]*\]$/
-				];
-
-				if (REGEXP) value = parseTag(1, value, REGEXP);
-
-				value = value.replace(/\]\s*\}$/g, "]}").replace(/\}\s*\}$/g, "}}").replace(/\s*\}$/g, "}");
-				value = value.replace(/\}$/g, ",}").replace(/^\s*/, "");
-
-				let r,
-					v;
-				while (r = rxp[0].exec(value)) {
-					if (r.length !== 3) continue;
-
-					r[1] = STRING.Trim(r[1].trim(), ["\"", "'"]).trim();
-					r[2] = String(r[2]).trim();
-
-					if (rxp[1].test(r[2])) {
-						v            = {};
-						parent[r[1]] = v;
-						parseObject(v, r[2], callback, STRING, rxp[0]);
-					}
-					else if (rxp[2].test(r[2])) {
-						v            = [];
-						parent[r[1]] = v;
-						parseArray(v, r[2], callback, STRING, rxp[0]);
-					}
-					else {
-						parseSimple(parent, r[1], r[2], callback, STRING, rxp[0]);
-					}
-				}
-			};
-			const parseArray  = (parent, value, callback, STRING, REGEXP) => {
-				const rxp = [
-					[/^["']/, /["']\s*,/g, "\", ", /"[\s\S]*",/g, ""],
-					[/^\{/, /\}\s*,/g, "}, ", /\{[\s\S]*\},/g, ["{", "}"]],
-					[/^\[/, /\]\s*,/g, "], ", /\[[\s\S]*\],/g, ["{", "}"]],
-					[/^[ef]?\-?\d+\.?\d*\s*,/, /\s*,/g, ", ", /[ef]?\-?\d+\.?\d*/g, ""],
-					[/^(?:true|false|null|undefined)\s*,/, /\s*,/g, ", ", /true|false|null|undefined/g, ""]
-				];
-
-				if (REGEXP) value = parseTag(2, value, REGEXP);
-
-				value = value.replace(/\[\s*\{$/g, "[{").replace(/\[\s*\[$/g, "[[").replace(/\[\s*$/g, "[");
-				value = value.replace(/\}\s*\]$/g, "}]").replace(/\]\s*\]$/g, "]]").replace(/\s*\]$/g, "]");
-				value = value.replace(/\]$/g, ",]");
-
-				value = STRING.Trim(value, ["[", "]"]).replace(/^\s*/, "");
-
-				for (let i = 0, r, v; i < rxp.length; i++) {
-					if (!rxp[i][0].test(value)) continue;
-
-					value = value.replace(rxp[i][1], rxp[i][2]);
-
-					while (r = rxp[i][3].exec(value)) {
-						r[0] = parseTag(i, r[0], rxp[i][3]);
-
-						if (rxp[i][4]) {
-							parent.push(i === 1 ? {} : []);
-							v = parent[parent.length - 1];
-
-							if (i === 1) parseObject(v, r[0], callback, STRING);
-							else parseArray(v, r[0], callback, STRING);
-						}
-						else {
-							parseSimple(parent, parent.length, r[0], callback, STRING);
-						}
-					}
-
+			switch (typeof(opt)) {
+				case "boolean":
+					form = opt;
 					break;
-				}
-			};
+			}
 
 			let result;
 
-			if (/^\[[\s\S]*\]$/.test(data)) {
-				result = [];
-
-				parseArray(result, data, func, STRING);
-			}
-			else {
-				if (!/^\{[\s\S]*\}$/.test(data)) data = `{${data}}`;
-
+			if (form === true) {
 				result = {};
 
-				parseObject(result, data, func, STRING);
+				let k,
+					v,
+					i;
+				data.split("&").forEach(d => {
+					i = d.indexOf("=");
+
+					if (i < 0) {
+						k = d;
+						v = undefined;
+					}
+					else {
+						k = d.substring(0, i);
+						v = d.substring(i + 1);
+					}
+
+					result[k] = result[k] ? [...result[k], v] : v;
+				});
+			}
+			else {
+				const parseTag    = (type, value, REGEXP) => {
+					if (type < 0 || type > 2) return value;
+
+					let i = 0,
+						d = "";
+
+					for (let l = 0, c = 0; i < value.length; i++) {
+						c = value[i];
+						d += c;
+						c = c.charCodeAt();
+
+						if (type === 0) {
+							//字符串
+							if (!l) l = c;
+							else if (c === 92 || (l & 64)) l ^= 64;
+							else if (l === c) break;
+						}
+						else if (type === 1) {
+							//对象
+							if (c === 39 || c === 34) {
+								d += parseTag(0, value.substr(i)).substr(1);
+								i = d.length - 1;
+							}
+							else if (c === 123) {
+								l += 1;
+							}
+							else if (c === 125) {
+								l -= 1;
+								if (!l) break;
+							}
+						}
+						else if (type === 2) {
+							//数组
+							if (c === 39 || c === 34) {
+								d += parseTag(0, value.substr(i)).substr(1);
+								i = d.length - 1;
+							}
+							else if (c === 91) {
+								l += 1;
+							}
+							else if (c === 93) {
+								l -= 1;
+								if (!l) break;
+							}
+						}
+					}
+
+					if (REGEXP && i < value.length) REGEXP.lastIndex -= value.length - d.length;
+
+					return d;
+				};
+				const parseSimple = (parent, key, value, callback, STRING, REGEXP) => {
+					let str = value[0];
+
+					if (str === "'" || str === "\"") value = parseTag(0, value, REGEXP);
+
+					str = STRING.Trim(value, ["\"", "'"]);
+
+					if (str !== value) {
+						parent[key] = str;
+					}
+					else {
+						switch (str) {
+							case "true":
+								parent[key] = true;
+								break;
+							case "false":
+								parent[key] = false;
+								break;
+							case "null":
+							case "undefined":
+								parent[key] = null;
+								break;
+							default:
+								if (/^function\s*\(.*?\)\s*\{\s\S*?\}$/i.test(str)) {
+									delete parent[key];
+								}
+								else {
+									parent[key] = $.isNumber(str, {nan: false, str: true}) ? Number(str) : str;
+								}
+								break;
+						}
+					}
+
+					if (callback) callback(parent, key, parent[key]);
+				};
+				const parseObject = (parent, value, callback, STRING, REGEXP) => {
+					const rxp = [
+						/["']?(\w{1}[\w\-\.]*)["']?\s*:\s*((?:\{[\s\S]*\})|(?:\[[\s\S]*\])|(?:[ef]?\-?\d+\.?\d*)|(?:true|false|null|undefined)|(?:["'][\s\S]*["'])|(?:function\s*\(.*?\)\s*\{[\s\S]*?\})){1},/g,
+						/^\{[\s\S]*\}$/,
+						/^\[[\s\S]*\]$/
+					];
+
+					if (REGEXP) value = parseTag(1, value, REGEXP);
+
+					value = value.replace(/\]\s*\}$/g, "]}").replace(/\}\s*\}$/g, "}}").replace(/\s*\}$/g, "}");
+					value = value.replace(/\}$/g, ",}").replace(/^\s*/, "");
+
+					let r,
+						v;
+					while (r = rxp[0].exec(value)) {
+						if (r.length !== 3) continue;
+
+						r[1] = STRING.Trim(r[1].trim(), ["\"", "'"]).trim();
+						r[2] = String(r[2]).trim();
+
+						if (rxp[1].test(r[2])) {
+							v            = {};
+							parent[r[1]] = v;
+							parseObject(v, r[2], callback, STRING, rxp[0]);
+						}
+						else if (rxp[2].test(r[2])) {
+							v            = [];
+							parent[r[1]] = v;
+							parseArray(v, r[2], callback, STRING, rxp[0]);
+						}
+						else {
+							parseSimple(parent, r[1], r[2], callback, STRING, rxp[0]);
+						}
+					}
+				};
+				const parseArray  = (parent, value, callback, STRING, REGEXP) => {
+					const rxp = [
+						[/^["']/, /["']\s*,/g, "\", ", /"[\s\S]*",/g, ""],
+						[/^\{/, /\}\s*,/g, "}, ", /\{[\s\S]*\},/g, ["{", "}"]],
+						[/^\[/, /\]\s*,/g, "], ", /\[[\s\S]*\],/g, ["{", "}"]],
+						[/^[ef]?\-?\d+\.?\d*\s*,/, /\s*,/g, ", ", /[ef]?\-?\d+\.?\d*/g, ""],
+						[/^(?:true|false|null|undefined)\s*,/, /\s*,/g, ", ", /true|false|null|undefined/g, ""]
+					];
+
+					if (REGEXP) value = parseTag(2, value, REGEXP);
+
+					value = value.replace(/\[\s*\{$/g, "[{").replace(/\[\s*\[$/g, "[[").replace(/\[\s*$/g, "[");
+					value = value.replace(/\}\s*\]$/g, "}]").replace(/\]\s*\]$/g, "]]").replace(/\s*\]$/g, "]");
+					value = value.replace(/\]$/g, ",]");
+
+					value = STRING.Trim(value, ["[", "]"]).replace(/^\s*/, "");
+
+					for (let i = 0, r, v; i < rxp.length; i++) {
+						if (!rxp[i][0].test(value)) continue;
+
+						value = value.replace(rxp[i][1], rxp[i][2]);
+
+						while (r = rxp[i][3].exec(value)) {
+							r[0] = parseTag(i, r[0], rxp[i][3]);
+
+							if (rxp[i][4]) {
+								parent.push(i === 1 ? {} : []);
+								v = parent[parent.length - 1];
+
+								if (i === 1) parseObject(v, r[0], callback, STRING);
+								else parseArray(v, r[0], callback, STRING);
+							}
+							else {
+								parseSimple(parent, parent.length, r[0], callback, STRING);
+							}
+						}
+
+						break;
+					}
+				};
+
+				if (/^\[[\s\S]*\]$/.test(data)) {
+					result = [];
+
+					parseArray(result, data, func, STRING);
+				}
+				else {
+					if (!/^\{[\s\S]*\}$/.test(data)) data = `{${data}}`;
+
+					result = {};
+
+					parseObject(result, data, func, STRING);
+				}
 			}
 
 			return result;

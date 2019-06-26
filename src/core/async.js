@@ -9,9 +9,7 @@
  * 2019-05-19    Format Code to jShow Style Guide
  * ==========================================
  */
-(owner => {
-	const $ = global.jShow;
-
+($ => {
 	/*
 	 ====================================
 	 = Name: TCallback
@@ -69,9 +67,7 @@
 		};
 
 		class TCallback extends TObject {
-			constructor (opt, limit, callback) {
-				super();
-
+			create (opt, limit, callback) {
 				this.__className = "TCallback";
 
 				this._locked = false;
@@ -186,7 +182,7 @@
 		}
 
 		return TCallback;
-	})(TObject);
+	})($.TObject);
 
 	/*
 	 ====================================
@@ -211,10 +207,8 @@
 	 =   always      = always event, after done/fail event
 	 ====================================
 	 */
-	class TDeferred extends TObject {
-		constructor (limit, callback) {
-			super();
-
+	class TDeferred extends $.TObject {
+		create (limit, callback) {
 			let _this    = this;
 			let _state   = _this.STATE;
 			let _event   = {
@@ -410,13 +404,13 @@
 		prop.always   = function (callback) { return this.on("always", callback); };
 		prop.warn     = function (callback) { return this.on("warn", callback); };
 		prop.progress = function (callback) { return this.on("progress", callback); };
-		prop.resolve  = function (arg) {
-			this.__resolve.call(this, arg);
+		prop.resolve  = function (...arg) {
+			this.__resolve.apply(this, arg.length > 2 ? [arg] : arg);
 
 			return this;
 		};
-		prop.reject   = function (arg) {
-			this.__reject.call(this, arg);
+		prop.reject   = function (...arg) {
+			this.__reject.apply(this, arg.length > 2 ? [arg] : arg);
 
 			return this;
 		};
@@ -456,7 +450,7 @@
 			obj.__reject  = fail;
 
 			obj.__limit  = 0;
-			obj.__simple = simple === true;
+			obj.__simple = simple !== false;
 			if (!obj.__simple) {
 				obj.__warn     = $.Callback(100).fire();
 				obj.__progress = $.Callback(100).fire();
@@ -640,5 +634,6 @@
 		}
 	};
 
-	jShow = {...owner, ...api};
+	jShow = {...$, ...api};
+	$     = jShow;
 })(jShow);
