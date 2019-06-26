@@ -1,0 +1,15 @@
+{
+	"compilerOptions": {
+		"module":      "commonjs",
+		"target":      "es2015",
+		"strict":      true,
+		"declaration": true,
+		"sourceMap":   true,
+		"noImplicitAny":                    true,
+		"noImplicitThis":                   true,
+		"strictNullChecks":                 false,
+		"removeComments":                   true,
+		"forceConsistentCasingInFileNames": true,
+		"preserveConstEnums":               true
+	}
+}

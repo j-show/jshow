@@ -16,4 +16,4 @@
 	$.__require("./lib/date", "Date");
 	$.__require("./lib/check", "Check");
 	// $.__require("./lib/task", "Task");
-})(this);
+})(jShow);
