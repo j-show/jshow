@@ -15,10 +15,10 @@
 [jshow-url]: https://github.com/j-show/jshow
 [jshow-npm]: https://npmjs.com/package/jshow
 [jshow-chat]: https://jshow.org/chat
-[jshow-circleci]: https://circleci.com/gh/j-show/jshow/tree/dev
-[jshow-codecov]: https://codecov.io/github/vuejs/vue?branch=dev
-[jshow-ci]: https://img.shields.io/circleci/project/github/j-show/jshow/dev.svg
-[jshow-co]: https://img.shields.io/codecov/c/github/j-show/jshow/dev.svg
+[jshow-circleci]: https://circleci.com/gh/j-show/jshow/tree/master
+[jshow-codecov]: https://codecov.io/github/j-show/jshow?branch=master
+[jshow-ci]: https://img.shields.io/circleci/project/github/j-show/jshow/master.svg
+[jshow-co]: https://img.shields.io/codecov/c/github/j-show/jshow/master.svg
 [jshow-ver]: https://img.shields.io/npm/v/jshow.svg
 [jshow-lic]: https://img.shields.io/npm/l/jshow.svg
 [jshow-dm]: https://img.shields.io/npm/dm/jshow.svg
