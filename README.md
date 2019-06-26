@@ -4,7 +4,7 @@
 	</a>
 </p>
 
-[![jshow-ci]][jshow-circleci]
+[![jshow-ci]][jshow-travisci]
 [![jshow-co]][jshow-codecov]
 [![jshow-dm]][jshow-npm]
 [![jshow-ver]][jshow-npm]
@@ -15,9 +15,9 @@
 [jshow-url]: https://github.com/j-show/jshow
 [jshow-npm]: https://npmjs.com/package/jshow
 [jshow-chat]: https://jshow.org/chat
-[jshow-circleci]: https://circleci.com/gh/j-show/jshow/tree/master
+[jshow-travisci]: https://travis-ci.org/j-show/jshow
 [jshow-codecov]: https://codecov.io/github/j-show/jshow?branch=master
-[jshow-ci]: https://img.shields.io/circleci/project/github/j-show/jshow/master.svg
+[jshow-ci]: https://img.shields.io/travis/j-show/jshow/master.svg
 [jshow-co]: https://img.shields.io/codecov/c/github/j-show/jshow/master.svg
 [jshow-ver]: https://img.shields.io/npm/v/jshow.svg
 [jshow-lic]: https://img.shields.io/npm/l/jshow.svg
