@@ -12,17 +12,22 @@
 [![jshow-lic]][jshow-npm]
 [![jshow-ct]][jshow-chat]
 
-[jshow-url]: https://github.com/j-show/jshow
+[jshow-github]: https://github.com/j-show/jshow
 [jshow-npm]: https://npmjs.com/package/jshow
-[jshow-chat]: https://jshow.org/chat
+[jshow-chat]: https://gitter.im/j-show/jshow
 [jshow-travisci]: https://travis-ci.org/j-show/jshow
 [jshow-codecov]: https://codecov.io/github/j-show/jshow?branch=master
+[jshow-site]: https://jshow.org
+[jshow-wiki]: https://wiki.jshow.org
+[jshow-example]: https://example.jshow.org
+[jshow-forum]: https://forum.jshow.org
+
 [jshow-ci]: https://img.shields.io/travis/j-show/jshow/master.svg
 [jshow-co]: https://img.shields.io/codecov/c/github/j-show/jshow/master.svg
 [jshow-ver]: https://img.shields.io/npm/v/jshow.svg
 [jshow-lic]: https://img.shields.io/npm/l/jshow.svg
 [jshow-dm]: https://img.shields.io/npm/dm/jshow.svg
-[jshow-ct]: https://img.shields.io/badge/chat-on%20discord-7289da.svg
+[jshow-ct]: https://img.shields.io/gitter/room/j-show/jshow.svg
 
 [jshow-svr-url]: https://github.com/j-show/jshow-svr
 [jshow-svr-npm]: https://npmjs.com/package/jshow-svr
@@ -47,7 +52,7 @@ jShow is an MIT-Licensed open source project with its ongoing development made p
 
 ### What's the difference between Patreon and OpenCollective?
 
-Funds donated via Patreon go directly to support [jShow][jshow-url] You's full-time work on jShow. Funds donated via OpenCollective are managed with transparent expenses and will be used for compensating work and expenses for core team members or sponsoring community events. Your name/logo will receive proper recognition and exposure by donating on either platform.
+Funds donated via Patreon go directly to support [jShow][jshow-github] You's full-time work on jShow. Funds donated via OpenCollective are managed with transparent expenses and will be used for compensating work and expenses for core team members or sponsoring community events. Your name/logo will receive proper recognition and exposure by donating on either platform.
 
 ---
 
@@ -130,13 +135,13 @@ jShow is an **open tool framework**. It's designed to support both `WebBrowser`,
 # Documentation
 
 
-To check out [live examples](https://jshow.org/example/index-en.html) and [wiki docs](https://github.com/j-show/jShow/wiki), visit [jshow.org](https://jshow.org).
+To check out [live examples][jshow-example] and [wiki docs][jshow-wiki], visit [jshow.org][jshow-site].
 
 ---
 
 # Questions
 
-For questions and support please use [the official forum](https://forum.jshow.org) or [community chat](https://chat.jshow.org). 
+For questions and support please use [the official forum][jshow-forum] or [community chat][jshow-chat]. 
 The [issue](https://github.com/j-show/jShow/issues) list of this repo is **exclusively** for bug reports and feature requests.
 
 ---
