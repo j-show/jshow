@@ -12,17 +12,22 @@
 [![jshow-lic]][jshow-npm]
 [![jshow-ct]][jshow-chat]
 
-[jshow-url]: https://github.com/j-show/jshow
+[jshow-github]: https://github.com/j-show/jshow
 [jshow-npm]: https://npmjs.com/package/jshow
-[jshow-chat]: https://jshow.org/chat
+[jshow-chat]: https://gitter.im/j-show/jshow
 [jshow-travisci]: https://travis-ci.org/j-show/jshow
 [jshow-codecov]: https://codecov.io/github/j-show/jshow?branch=master
+[jshow-site]: https://jshow.org
+[jshow-wiki]: https://wiki.jshow.org
+[jshow-example]: https://example.jshow.org
+[jshow-forum]: https://forum.jshow.org
+
 [jshow-ci]: https://img.shields.io/travis/j-show/jshow/master.svg
 [jshow-co]: https://img.shields.io/codecov/c/github/j-show/jshow/master.svg
 [jshow-ver]: https://img.shields.io/npm/v/jshow.svg
 [jshow-lic]: https://img.shields.io/npm/l/jshow.svg
 [jshow-dm]: https://img.shields.io/npm/dm/jshow.svg
-[jshow-ct]: https://img.shields.io/badge/chat-on%20discord-7289da.svg
+[jshow-ct]: https://img.shields.io/gitter/room/j-show/jshow.svg
 
 [jshow-svr-url]: https://github.com/j-show/jshow-svr
 [jshow-svr-npm]: https://npmjs.com/package/jshow-svr
@@ -47,7 +52,7 @@ jShow是一个MIT许可的开源项目, 其持续的开发完全是在这些令�
 
 ### 以上两种支持方式有什么不同?
 
-通过Patreon捐赠的资金直接用于支持 [jShow][jshow-url] 项目，并让核心团队成员通过全职的方式推动项目。通过OpenCollective捐赠的资金会以全透明方式进行项目管理, 并将用于补偿核心团队成员的工作和费用或赞助社区活动。您的名称/徽标将通过在任何一个平台上捐款获得适当的认可和曝光。
+通过Patreon捐赠的资金直接用于支持 [jShow][jshow-github] 项目，并让核心团队成员通过全职的方式推动项目。通过OpenCollective捐赠的资金会以全透明方式进行项目管理, 并将用于补偿核心团队成员的工作和费用或赞助社区活动。您的名称/徽标将通过在任何一个平台上捐款获得适当的认可和曝光。
 
 ---
 
@@ -80,7 +85,7 @@ jShow是一个**开放式工具框架**。他被设计成同时支持`WebBrowser
 
 | 项目 | 状态&版本 | 说明 |
 |---|---|---|
-| [jShow][jshow-url] | [![jshow-ver]][jshow-npm] | jShow 生态圈 核心库 |
+| [jShow][jshow-github] | [![jshow-ver]][jshow-npm] | jShow 生态圈 核心库 |
 | [jshow-svr][jshow-svr-url] | [![jshow-svr-ver]][jshow-svr-npm] | HTTP服务框架，支持HTTP/HTTPS/HTTP2 |
 | [jshow-socket][jshow-socket-url] | [![jshow-socket-ver]][jshow-socket-npm] | Socket服务框架，支持TCP/UDP/WebSocket |
 | [jshow-nano][jshow-nano-url] | [![jshow-nano-ver]][jshow-nano-npm] | ARM控制框架，支持GPIO/SPI/serial/bluetooth |
@@ -129,13 +134,13 @@ jShow是一个**开放式工具框架**。他被设计成同时支持`WebBrowser
 
 # 文档
 
-我们提供[在线样例](https://jshow.org/example/index-zh.html)，还可以通过阅读[Wiki](https://github.com/j-show/jShow/wiki/中文Wiki)来了解相关说明.
+我们提供[在线样例][jshow-example]，还可以通过阅读[Wiki][jshow-wiki]来了解相关说明, visit [jshow.org][jshow-site].
 
 ---
 
 # 问题
 
-如需问题和支持, 请使用 [官方论坛](https://forum.jshow.org) 或 [社区聊天](https://chat.jshow.org).
+如需问题和支持, 请使用 [官方论坛][jshow-forum] 或 [社区聊天][jshow-chat].
 这个仓库的[Issue](https://github.com/j-show/jShow/issues)，**只用于错误报告和功能请求**
 
 ---
