@@ -85,7 +85,7 @@ jShow is an **open tool framework**. It's designed to support both `WebBrowser`,
 
 | Project | Status | Description |
 |---|---|---|
-| [jshow][jshow-url] | [![jshow-ver]][jshow-npm] | jShow ecosystem core |
+| [jshow][jshow-github] | [![jshow-ver]][jshow-npm] | jShow ecosystem core |
 | [jshow-svr][jshow-svr-url] | [![jshow-svr-ver]][jshow-svr-npm] | HTTP Service Framework, compatible with HTTP/HTTPS/HTTP2 |
 | [jshow-socket][jshow-socket-url] | [![jshow-socket-ver]][jshow-socket-npm] | Socket Service Framework, compatible with TCP/UDP/WebSocket |
 | [jshow-nano][jshow-nano-url] | [![jshow-nano-ver]][jshow-nano-npm] | ARM Control Framework, compatible with GPIO/SPI/serial/bluetooth |
